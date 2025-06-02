@@ -9,7 +9,8 @@
     "db:migrate": "bun run db/migrate.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "bun run db/seed.ts"
+    "db:seed": "bun run db/seed.ts",
+    "db:create-readonly-user": "bun run scripts/create-readonly-user.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
