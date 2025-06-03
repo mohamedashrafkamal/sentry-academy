@@ -16,10 +16,10 @@ const LessonList: React.FC<LessonListProps> = ({
   onSelectLesson,
 }) => {
   return (
-    <div className="space-y-2">
-      <h3 className="text-lg font-semibold mb-4">Course Content</h3>
-      <p className="text-gray-600 text-sm mb-4">{lessons.length} lessons</p>
-      
+    <div className="p-4 space-y-2">
+      <h3 className="text-lg font-semibold">Course Content</h3>
+      <p className="text-gray-600 text-sm">{lessons.length} lessons</p>
+
       <div>
         {lessons.map(lesson => (
           <LessonCard

@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
+import Highlight from 'rehype-highlight';
 import { Lesson } from '../../types';
 import { Card, CardContent } from '../ui/Card';
 import { Clock, Video, FileText } from 'lucide-react';
@@ -29,21 +30,9 @@ const LessonContent: React.FC<LessonContentProps> = ({ lesson }) => {
     if (lesson.type === 'text' && lesson.content) {
       return (
         <div className="prose prose-lg max-w-none">
-          <ReactMarkdown 
+          <ReactMarkdown
+            rehypePlugins={[Highlight]}
             components={{
-              code: ({ inline, className, children, ...props }) => {
-                return !inline ? (
-                  <pre className="bg-gray-100 rounded p-4 overflow-auto">
-                    <code className={className} {...props}>
-                      {children}
-                    </code>
-                  </pre>
-                ) : (
-                  <code className="bg-gray-100 px-1 py-0.5 rounded text-sm" {...props}>
-                    {children}
-                  </code>
-                );
-              },
               h1: ({ children }) => (
                 <h1 className="text-3xl font-bold text-gray-900 mt-8 mb-4 first:mt-0">
                   {children}
@@ -118,7 +107,7 @@ const LessonContent: React.FC<LessonContentProps> = ({ lesson }) => {
           </div>
           <p className="text-gray-600 mt-2">{lesson.description}</p>
         </div>
-        
+
         {renderContent()}
       </CardContent>
     </Card>
