@@ -60,6 +60,21 @@ export const courseRoutes = new Elysia({ prefix: '/courses' })
     })
   })
   
+  // Get categories - MOVED BEFORE /:id route to prevent conflicts
+  .get('/categories', async () => {
+    try {
+      const categoryList = await db
+        .select()
+        .from(categories)
+        .orderBy(categories.order, categories.name);
+      
+      return categoryList;
+    } catch (error) {
+      console.error('Database error in categories route:', error);
+      throw new Error('Failed to retrieve categories from database');
+    }
+  })
+  
   // Get single course by ID
   .get('/:id', async ({ params: { id } }) => {
     try {
@@ -192,19 +207,4 @@ export const courseRoutes = new Elysia({ prefix: '/courses' })
       prerequisites: t.Optional(t.Array(t.String())),
       learningObjectives: t.Optional(t.Array(t.String())),
     })
-  })
-  
-  // Get categories
-  .get('/categories', async () => {
-    try {
-      const categoryList = await db
-        .select()
-        .from(categories)
-        .orderBy(categories.order, categories.name);
-      
-      return categoryList;
-    } catch (error) {
-      console.error('Database error in categories route:', error);
-      throw new Error('Failed to retrieve categories from database');
-    }
   });

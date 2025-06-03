@@ -12,6 +12,10 @@ const app = new Elysia()
     credentials: true
   }))
   .get('/', () => ({ message: 'Sentry Academy API', version: '1.0.0' }))
+  
+  // Handle favicon requests gracefully
+  .get('/favicon.ico', () => new Response(null, { status: 204 }))
+  
   .group('/api', app => app
     .use(courseRoutes)
     .use(lessonRoutes)
@@ -19,14 +23,43 @@ const app = new Elysia()
     .use(enrollmentRoutes)
     .use(searchRoutes)
   )
-  .onError(({ code, error }) => {
-    console.error(`Error ${code}:`, error);
+  .onError(({ code, error, request }) => {
+    console.error(`Error ${code} for ${request.method} ${request.url}:`, error);
+    
+    // Don't log 404s for favicon or common browser requests
+    if (code === 'NOT_FOUND' && (
+      request.url.includes('favicon.ico') || 
+      request.url.includes('.ico') ||
+      request.url.includes('.png') ||
+      request.url.includes('.svg')
+    )) {
+      return new Response(null, { status: 404 });
+    }
+    
     return {
       error: true,
-      message: error.message || 'Internal server error',
-      code
+      message: error instanceof Error ? error.message : 'Internal server error',
+      code,
+      path: new URL(request.url).pathname
     };
   })
+  
+  // Catch-all route for unmatched paths
+  .all('*', ({ request }) => {
+    console.log(`Unmatched route: ${request.method} ${request.url}`);
+    return new Response(
+      JSON.stringify({ 
+        error: true, 
+        message: `Route not found: ${request.method} ${new URL(request.url).pathname}`,
+        code: 'NOT_FOUND'
+      }), 
+      { 
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  })
+  
   .listen(process.env.PORT || 3001);
 
 console.log(`🦊 Sentry Academy API running at ${app.server?.hostname}:${app.server?.port}`);

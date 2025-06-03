@@ -10,6 +10,16 @@ interface CreateReadOnlyUserOptions {
   schemas?: string[];
 }
 
+// Helper function to escape SQL identifiers
+function escapeIdentifier(name: string): string {
+  return `"${name.replace(/"/g, '""')}"`;
+}
+
+// Helper function to escape SQL literals
+function escapeLiteral(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
 async function createReadOnlyUser(options: CreateReadOnlyUserOptions = {}) {
   const DATABASE_URL = process.env.DATABASE_URL;
   
@@ -35,43 +45,43 @@ async function createReadOnlyUser(options: CreateReadOnlyUserOptions = {}) {
     console.log(`👤 Creating read-only user: ${username}`);
     
     // Create the user if it doesn't exist
-    await adminSql`
+    await adminSql.unsafe(`
       DO $$
       BEGIN
-        IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = ${username}) THEN
-          CREATE ROLE ${adminSql(username)} WITH LOGIN PASSWORD ${password};
+        IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = ${escapeLiteral(username)}) THEN
+          EXECUTE format('CREATE ROLE %I WITH LOGIN PASSWORD %L', ${escapeLiteral(username)}, ${escapeLiteral(password)});
         ELSE
-          ALTER ROLE ${adminSql(username)} WITH PASSWORD ${password};
+          EXECUTE format('ALTER ROLE %I WITH PASSWORD %L', ${escapeLiteral(username)}, ${escapeLiteral(password)});
         END IF;
       END
       $$;
-    `;
+    `);
 
     console.log('🔒 Setting up read-only permissions...');
     
     // Grant connect permission to database
-    await adminSql`GRANT CONNECT ON DATABASE ${adminSql(databaseName)} TO ${adminSql(username)}`;
+    await adminSql.unsafe(`GRANT CONNECT ON DATABASE ${escapeIdentifier(databaseName)} TO ${escapeIdentifier(username)}`);
     
     // Grant usage on schemas and select on all tables
     for (const schema of schemas) {
       console.log(`📋 Granting permissions on schema: ${schema}`);
       
       // Grant usage on schema
-      await adminSql`GRANT USAGE ON SCHEMA ${adminSql(schema)} TO ${adminSql(username)}`;
+      await adminSql.unsafe(`GRANT USAGE ON SCHEMA ${escapeIdentifier(schema)} TO ${escapeIdentifier(username)}`);
       
       // Grant select on all existing tables in schema
-      await adminSql`GRANT SELECT ON ALL TABLES IN SCHEMA ${adminSql(schema)} TO ${adminSql(username)}`;
+      await adminSql.unsafe(`GRANT SELECT ON ALL TABLES IN SCHEMA ${escapeIdentifier(schema)} TO ${escapeIdentifier(username)}`);
       
       // Grant select on all future tables in schema
-      await adminSql`ALTER DEFAULT PRIVILEGES IN SCHEMA ${adminSql(schema)} GRANT SELECT ON TABLES TO ${adminSql(username)}`;
+      await adminSql.unsafe(`ALTER DEFAULT PRIVILEGES IN SCHEMA ${escapeIdentifier(schema)} GRANT SELECT ON TABLES TO ${escapeIdentifier(username)}`);
       
       // Grant usage on all sequences (for id columns)
-      await adminSql`GRANT USAGE ON ALL SEQUENCES IN SCHEMA ${adminSql(schema)} TO ${adminSql(username)}`;
-      await adminSql`ALTER DEFAULT PRIVILEGES IN SCHEMA ${adminSql(schema)} GRANT USAGE ON SEQUENCES TO ${adminSql(username)}`;
+      await adminSql.unsafe(`GRANT USAGE ON ALL SEQUENCES IN SCHEMA ${escapeIdentifier(schema)} TO ${escapeIdentifier(username)}`);
+      await adminSql.unsafe(`ALTER DEFAULT PRIVILEGES IN SCHEMA ${escapeIdentifier(schema)} GRANT USAGE ON SEQUENCES TO ${escapeIdentifier(username)}`);
     }
 
     // Ensure the user cannot create, modify, or delete anything
-    await adminSql`ALTER ROLE ${adminSql(username)} SET default_transaction_read_only = true`;
+    await adminSql.unsafe(`ALTER ROLE ${escapeIdentifier(username)} SET default_transaction_read_only = true`);
 
     console.log('✅ Read-only user created successfully!');
     console.log('\n📋 Connection Details:');
