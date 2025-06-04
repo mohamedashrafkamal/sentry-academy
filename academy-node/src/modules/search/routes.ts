@@ -1,11 +1,15 @@
-import { Elysia, t } from 'elysia';
-import { db, courses, lessons, users } from '../../../db';
+import express from 'express';
+import type { Request, Response } from 'express';
+import { db } from '../../../db';
+import { courses, lessons, users } from '../../../db/schema';
 import { or, ilike, sql, and, eq } from 'drizzle-orm';
 
-export const searchRoutes = new Elysia({ prefix: '/search' })
-  // Search courses with advanced filtering
-  .get('/courses', async ({ query }) => {
-    const { q, category, level, minRating, maxPrice, instructor, tags } = query;
+export const searchRoutes = express.Router();
+
+// Search courses with advanced filtering
+(searchRoutes.get as any)('/courses', async (req: Request, res: Response) => {
+  try {
+    const { q, category, level, minRating, maxPrice, instructor, tags } = req.query;
     
     let conditions = [];
     
@@ -22,12 +26,12 @@ export const searchRoutes = new Elysia({ prefix: '/search' })
     
     // Category filter
     if (category) {
-      conditions.push(eq(courses.category, category));
+      conditions.push(eq(courses.category, category as string));
     }
     
     // Level filter
     if (level) {
-      conditions.push(eq(courses.level, level));
+      conditions.push(eq(courses.level, level as "beginner" | "intermediate" | "advanced"));
     }
     
     // Rating filter
@@ -42,7 +46,7 @@ export const searchRoutes = new Elysia({ prefix: '/search' })
     
     // Tags filter (array contains)
     if (tags) {
-      const tagArray = tags.split(',');
+      const tagArray = (tags as string).split(',');
       conditions.push(
         sql`${courses.tags} @> ${JSON.stringify(tagArray)}::jsonb`
       );
@@ -84,7 +88,7 @@ export const searchRoutes = new Elysia({ prefix: '/search' })
     // Sort by relevance (if searching) or by creation date
     if (q) {
       // Simple relevance scoring based on title match
-      coursesQuery.orderBy(
+      const results = await coursesQuery.orderBy(
         sql`
           CASE 
             WHEN ${courses.title} ILIKE ${q + '%'} THEN 1
@@ -94,44 +98,50 @@ export const searchRoutes = new Elysia({ prefix: '/search' })
         `,
         courses.rating
       );
+      
+      res.json({
+        results,
+        total: results.length,
+        query: q || '',
+        filters: {
+          category,
+          level,
+          minRating,
+          maxPrice,
+          instructor,
+          tags,
+        },
+      });
     } else {
-      coursesQuery.orderBy(
+      const results = await coursesQuery.orderBy(
         courses.isFeatured,
         courses.rating,
         courses.createdAt
       );
+      
+      res.json({
+        results,
+        total: results.length,
+        query: q || '',
+        filters: {
+          category,
+          level,
+          minRating,
+          maxPrice,
+          instructor,
+          tags,
+        },
+      });
     }
-    
-    const results = await coursesQuery;
-    
-    return {
-      results,
-      total: results.length,
-      query: q || '',
-      filters: {
-        category,
-        level,
-        minRating,
-        maxPrice,
-        instructor,
-        tags,
-      },
-    };
-  }, {
-    query: t.Object({
-      q: t.Optional(t.String()),
-      category: t.Optional(t.String()),
-      level: t.Optional(t.Union([t.Literal('beginner'), t.Literal('intermediate'), t.Literal('advanced')])),
-      minRating: t.Optional(t.Number()),
-      maxPrice: t.Optional(t.Number()),
-      instructor: t.Optional(t.String()),
-      tags: t.Optional(t.String()),
-    })
-  })
-  
-  // Search lessons within courses
-  .get('/lessons', async ({ query }) => {
-    const { q, courseId, type } = query;
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Search lessons within courses
+(searchRoutes.get as any)('/lessons', async (req: Request, res: Response) => {
+  try {
+    const { q, courseId, type } = req.query;
     
     let conditions = [];
     
@@ -148,12 +158,12 @@ export const searchRoutes = new Elysia({ prefix: '/search' })
     
     // Course filter
     if (courseId) {
-      conditions.push(eq(lessons.courseId, courseId));
+      conditions.push(eq(lessons.courseId, courseId as string));
     }
     
     // Type filter
     if (type) {
-      conditions.push(eq(lessons.type, type));
+      conditions.push(eq(lessons.type, type as "video" | "text" | "quiz" | "assignment"));
     }
     
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -168,7 +178,7 @@ export const searchRoutes = new Elysia({ prefix: '/search' })
       .where(whereClause)
       .orderBy(lessons.order);
     
-    return {
+    res.json({
       results: results.map(r => ({
         ...r.lesson,
         courseName: r.course.title,
@@ -180,25 +190,25 @@ export const searchRoutes = new Elysia({ prefix: '/search' })
         courseId,
         type,
       },
-    };
-  }, {
-    query: t.Object({
-      q: t.Optional(t.String()),
-      courseId: t.Optional(t.String()),
-      type: t.Optional(t.Union([t.Literal('video'), t.Literal('text'), t.Literal('quiz'), t.Literal('assignment')])),
-    })
-  })
-  
-  // Global search (search across courses, lessons, and instructors)
-  .get('/', async ({ query: { q } }) => {
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Global search (search across courses, lessons, and instructors)
+(searchRoutes.get as any)('/search', async (req: Request, res: Response) => {
+  try {
+    const { q } = req.query;
+    
     if (!q) {
-      return {
+      return res.json({
         courses: [],
         lessons: [],
         instructors: [],
         total: 0,
         query: '',
-      };
+      });
     }
     
     // Search courses
@@ -261,23 +271,25 @@ export const searchRoutes = new Elysia({ prefix: '/search' })
       )
       .limit(5);
     
-    return {
+    res.json({
       courses: courseResults,
       lessons: lessonResults,
       instructors: instructorResults,
       total: courseResults.length + lessonResults.length + instructorResults.length,
       query: q,
-    };
-  }, {
-    query: t.Object({
-      q: t.String(),
-    })
-  })
-  
-  // Get search suggestions (autocomplete)
-  .get('/suggestions', async ({ query: { q } }) => {
-    if (!q || q.length < 2) {
-      return [];
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get search suggestions (autocomplete)
+(searchRoutes.get as any)('/suggestions', async (req: Request, res: Response) => {
+  try {
+    const { q } = req.query;
+    
+    if (!q || typeof q !== 'string' || q.length < 2) {
+      return res.json([]);
     }
     
     // Get course title suggestions
@@ -310,9 +322,8 @@ export const searchRoutes = new Elysia({ prefix: '/search' })
       .where(sql`jsonb_array_elements_text(${courses.tags}) ILIKE ${q + '%'}`)
       .limit(3);
     
-    return [...suggestions, ...categorySuggestions, ...tagSuggestions];
-  }, {
-    query: t.Object({
-      q: t.String(),
-    })
-  });
+    res.json([...suggestions, ...categorySuggestions, ...tagSuggestions]);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});

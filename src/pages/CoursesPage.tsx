@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Course } from '../types';
 import CourseGrid from '../components/courses/CourseGrid';
 import CategoryFilter from '../components/courses/CategoryFilter';
 import { api } from '../services/api';
 import { useApi } from '../hooks/useApi';
+import { useAuth } from '../contexts/AuthContext';
 
 const CoursesPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
+  const { user } = useAuth();
   
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
@@ -20,7 +21,22 @@ const CoursesPage: React.FC = () => {
   const getCategories = useCallback(() => api.courses.getCategories(), []);
   const { data: categoriesData } = useApi(getCategories);
   
+  // Fetch user enrollments
+  const getUserEnrollments = useCallback(() => {
+    if (!user?.id) return Promise.resolve([]);
+    return api.enrollments.getUserEnrollments(user.id);
+  }, [user?.id]);
+  const { data: enrollments, refetch: refetchEnrollments } = useApi(getUserEnrollments);
+  
   const categories = categoriesData?.map(cat => cat.name) || [];
+  
+  // Get enrolled course IDs
+  const enrolledCourseIds = enrollments?.map(enrollment => enrollment.courseId) || [];
+  
+  // Handle enrollment changes
+  const handleEnrollmentChange = () => {
+    refetchEnrollments();
+  };
   
   // Filter courses based on search and category
   const filteredCourses = React.useMemo(() => {
@@ -91,7 +107,11 @@ const CoursesPage: React.FC = () => {
         </div>
       )}
       
-      <CourseGrid courses={filteredCourses} />
+      <CourseGrid 
+        courses={filteredCourses} 
+        enrolledCourseIds={enrolledCourseIds}
+        onEnrollmentChange={handleEnrollmentChange}
+      />
     </div>
   );
 };

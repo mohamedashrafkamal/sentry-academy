@@ -82,11 +82,15 @@ export const api = {
 
   // Enrollments
   enrollments: {
-    create: (courseId: string) => fetchApi<any>('/enrollments', {
+    create: (courseId: string, userId: string) => fetchApi<any>('/enrollments', {
       method: 'POST',
-      body: JSON.stringify({ courseId }),
+      body: JSON.stringify({ courseId, userId }),
     }),
+    getUserEnrollments: (userId: string) => fetchApi<any[]>(`/enrollments/user/${userId}`),
     getProgress: (enrollmentId: string) => fetchApi<any>(`/enrollments/${enrollmentId}/progress`),
+    delete: (enrollmentId: string) => fetchApi<any>(`/enrollments/${enrollmentId}`, {
+      method: 'DELETE',
+    }),
   },
 
   // Search

@@ -1,17 +1,30 @@
-import React from 'react';
-import { Star, Clock, Award } from 'lucide-react';
+import React, { useState } from 'react';
+import { Star, Clock, Award, Plus, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Course } from '../../types';
 import { Card, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
+import { useAuth } from '../../contexts/AuthContext';
+import { api } from '../../services/api';
 
 interface CourseCardProps {
   course: Course;
   className?: string;
+  isEnrolled?: boolean;
+  onEnrollmentChange?: () => void;
+  showEnrollButton?: boolean;
 }
 
-const CourseCard: React.FC<CourseCardProps> = ({ course, className = '' }) => {
+const CourseCard: React.FC<CourseCardProps> = ({ 
+  course, 
+  className = '', 
+  isEnrolled = false,
+  onEnrollmentChange,
+  showEnrollButton = true
+}) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [isEnrolling, setIsEnrolling] = useState(false);
   
   const getLevelBadgeVariant = (level: string) => {
     switch (level) {
@@ -28,6 +41,26 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = '' }) => {
 
   const handleClick = () => {
     navigate(`/courses/${course.id}`);
+  };
+
+  const handleEnroll = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    
+    if (!user?.id) {
+      alert('Please log in to enroll in courses');
+      return;
+    }
+
+    setIsEnrolling(true);
+    try {
+      await api.enrollments.create(course.id, user.id);
+      onEnrollmentChange?.();
+    } catch (error) {
+      console.error('Failed to enroll:', error);
+      alert('Failed to enroll in the course. Please try again.');
+    } finally {
+      setIsEnrolling(false);
+    }
   };
 
   return (
@@ -82,6 +115,35 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, className = '' }) => {
             </Badge>
           </div>
         </div>
+
+        {showEnrollButton && (
+          <div className="pt-3 border-t border-gray-100">
+            {isEnrolled ? (
+              <div className="flex items-center justify-center text-green-600 font-medium text-sm">
+                <Check className="h-4 w-4 mr-1" />
+                Enrolled
+              </div>
+            ) : (
+              <button
+                onClick={handleEnroll}
+                disabled={isEnrolling}
+                className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded-md transition-colors"
+              >
+                {isEnrolling ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                    Enrolling...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Enroll
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

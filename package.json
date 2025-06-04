@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "run-p dev:frontend dev:backend",
     "dev:frontend": "vite",
-    "dev:backend": "cd academy-server && bun run dev",
+    "dev:backend": "cd academy-node && npm run dev",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

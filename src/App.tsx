@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import CoursesPage from './pages/CoursesPage';
 import CourseDetailPage from './pages/CourseDetailPage';
+import MyCoursesPage from './pages/MyCoursesPage';
 import FavoritesPage from './pages/FavoritesPage';
 import LessonPlansPage from './pages/LessonPlansPage';
 import ProfilePage from './pages/ProfilePage';
@@ -53,7 +54,7 @@ function App() {
             
             <Route path="my-courses" element={
               <ProtectedRoute>
-                <CoursesPage />
+                <MyCoursesPage />
               </ProtectedRoute>
             } />
             

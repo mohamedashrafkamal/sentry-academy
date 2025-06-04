@@ -7,13 +7,19 @@ interface CourseGridProps {
   title?: string;
   description?: string;
   className?: string;
+  enrolledCourseIds?: string[];
+  onEnrollmentChange?: () => void;
+  showEnrollButton?: boolean;
 }
 
 const CourseGrid: React.FC<CourseGridProps> = ({ 
   courses, 
   title, 
   description,
-  className = '' 
+  className = '',
+  enrolledCourseIds = [],
+  onEnrollmentChange,
+  showEnrollButton = true
 }) => {
   return (
     <div className={className}>
@@ -31,7 +37,13 @@ const CourseGrid: React.FC<CourseGridProps> = ({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map(course => (
-            <CourseCard key={course.id} course={course} />
+            <CourseCard 
+              key={course.id} 
+              course={course} 
+              isEnrolled={enrolledCourseIds.includes(course.id)}
+              onEnrollmentChange={onEnrollmentChange}
+              showEnrollButton={showEnrollButton}
+            />
           ))}
         </div>
       )}

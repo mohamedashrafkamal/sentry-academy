@@ -1,0 +1,37 @@
+{
+  "name": "academy-node",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch index.ts",
+    "start": "node --loader tsx/esm index.ts",
+    "build": "tsc",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx db/migrate.ts",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx db/seed.ts",
+    "db:create-readonly-user": "tsx scripts/create-readonly-user.ts"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.18",
+    "@types/express": "^5.0.2",
+    "@types/node": "^20.0.0",
+    "drizzle-kit": "^0.31.1",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@paralleldrive/cuid2": "^2.2.2",
+    "@sentry/cli": "^2.46.0",
+    "@sentry/node": "^9.26.0",
+    "@sentry/profiling-node": "^9.26.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "drizzle-orm": "^0.44.2",
+    "express": "^4.18.0",
+    "pg": "^8.16.0",
+    "postgres": "^3.4.7"
+  }
+}
