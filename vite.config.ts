@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -9,8 +10,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
     sentryVitePlugin({
-      org: process.env.VITE_SENTRY_ORG,
-      project: process.env.VITE_SENTRY_PROJECT,
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
     }),
   ],
 
