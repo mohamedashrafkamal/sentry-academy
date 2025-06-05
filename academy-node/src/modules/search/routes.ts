@@ -1,5 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import express from 'express';
-import type { Request, Response } from 'express';
 import { db } from '../../../db';
 import { courses, lessons, users } from '../../../db/schema';
 import { or, ilike, sql, and, eq } from 'drizzle-orm';
@@ -7,12 +7,13 @@ import { or, ilike, sql, and, eq } from 'drizzle-orm';
 export const searchRoutes = express.Router();
 
 // Search courses with advanced filtering
-(searchRoutes.get as any)('/courses', async (req: Request, res: Response) => {
+searchRoutes.get('/courses', async (req, res) => {
   try {
-    const { q, category, level, minRating, maxPrice, instructor, tags } = req.query;
-    
-    let conditions = [];
-    
+    const { q, category, level, minRating, maxPrice, instructor, tags } =
+      req.query;
+
+    const conditions = [];
+
     // Text search in title, description, and tags
     if (q) {
       conditions.push(
@@ -23,27 +24,29 @@ export const searchRoutes = express.Router();
         )
       );
     }
-    
+
     // Category filter
     if (category) {
       conditions.push(eq(courses.category, category as string));
     }
-    
+
     // Level filter
     if (level) {
-      conditions.push(eq(courses.level, level as "beginner" | "intermediate" | "advanced"));
+      conditions.push(
+        eq(courses.level, level as 'beginner' | 'intermediate' | 'advanced')
+      );
     }
-    
+
     // Rating filter
     if (minRating) {
       conditions.push(sql`${courses.rating} >= ${minRating}`);
     }
-    
+
     // Price filter
     if (maxPrice !== undefined) {
       conditions.push(sql`${courses.price} <= ${maxPrice}`);
     }
-    
+
     // Tags filter (array contains)
     if (tags) {
       const tagArray = (tags as string).split(',');
@@ -51,14 +54,14 @@ export const searchRoutes = express.Router();
         sql`${courses.tags} @> ${JSON.stringify(tagArray)}::jsonb`
       );
     }
-    
+
     // Instructor filter
     if (instructor) {
       conditions.push(ilike(users.name, `%${instructor}%`));
     }
-    
+
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-    
+
     // Build the query with instructor join
     const coursesQuery = db
       .select({
@@ -84,13 +87,13 @@ export const searchRoutes = express.Router();
       .from(courses)
       .leftJoin(users, eq(courses.instructorId, users.id))
       .where(whereClause);
-    
+
     // Sort by relevance (if searching) or by creation date
     if (q) {
       // Simple relevance scoring based on title match
       const results = await coursesQuery.orderBy(
         sql`
-          CASE 
+          CASE
             WHEN ${courses.title} ILIKE ${q + '%'} THEN 1
             WHEN ${courses.title} ILIKE ${'%' + q + '%'} THEN 2
             ELSE 3
@@ -98,7 +101,7 @@ export const searchRoutes = express.Router();
         `,
         courses.rating
       );
-      
+
       res.json({
         results,
         total: results.length,
@@ -118,7 +121,7 @@ export const searchRoutes = express.Router();
         courses.rating,
         courses.createdAt
       );
-      
+
       res.json({
         results,
         total: results.length,
@@ -139,12 +142,12 @@ export const searchRoutes = express.Router();
 });
 
 // Search lessons within courses
-(searchRoutes.get as any)('/lessons', async (req: Request, res: Response) => {
+searchRoutes.get('/lessons', async (req, res) => {
   try {
     const { q, courseId, type } = req.query;
-    
-    let conditions = [];
-    
+
+    const conditions = [];
+
     // Text search in title, description, and content
     if (q) {
       conditions.push(
@@ -155,19 +158,21 @@ export const searchRoutes = express.Router();
         )
       );
     }
-    
+
     // Course filter
     if (courseId) {
       conditions.push(eq(lessons.courseId, courseId as string));
     }
-    
+
     // Type filter
     if (type) {
-      conditions.push(eq(lessons.type, type as "video" | "text" | "quiz" | "assignment"));
+      conditions.push(
+        eq(lessons.type, type as 'video' | 'text' | 'quiz' | 'assignment')
+      );
     }
-    
+
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-    
+
     const results = await db
       .select({
         lesson: lessons,
@@ -177,9 +182,9 @@ export const searchRoutes = express.Router();
       .innerJoin(courses, eq(lessons.courseId, courses.id))
       .where(whereClause)
       .orderBy(lessons.order);
-    
+
     res.json({
-      results: results.map(r => ({
+      results: results.map((r) => ({
         ...r.lesson,
         courseName: r.course.title,
         courseSlug: r.course.slug,
@@ -197,20 +202,21 @@ export const searchRoutes = express.Router();
 });
 
 // Global search (search across courses, lessons, and instructors)
-(searchRoutes.get as any)('/search', async (req: Request, res: Response) => {
+searchRoutes.get('/search', async (req, res) => {
   try {
     const { q } = req.query;
-    
+
     if (!q) {
-      return res.json({
+      res.json({
         courses: [],
         lessons: [],
         instructors: [],
         total: 0,
         query: '',
       });
+      return;
     }
-    
+
     // Search courses
     const courseResults = await db
       .select({
@@ -225,13 +231,10 @@ export const searchRoutes = express.Router();
       })
       .from(courses)
       .where(
-        or(
-          ilike(courses.title, `%${q}%`),
-          ilike(courses.description, `%${q}%`)
-        )
+        or(ilike(courses.title, `%${q}%`), ilike(courses.description, `%${q}%`))
       )
       .limit(10);
-    
+
     // Search lessons
     const lessonResults = await db
       .select({
@@ -243,13 +246,10 @@ export const searchRoutes = express.Router();
       })
       .from(lessons)
       .where(
-        or(
-          ilike(lessons.title, `%${q}%`),
-          ilike(lessons.description, `%${q}%`)
-        )
+        or(ilike(lessons.title, `%${q}%`), ilike(lessons.description, `%${q}%`))
       )
       .limit(10);
-    
+
     // Search instructors
     const instructorResults = await db
       .select({
@@ -263,19 +263,17 @@ export const searchRoutes = express.Router();
       .where(
         and(
           eq(users.role, 'instructor'),
-          or(
-            ilike(users.name, `%${q}%`),
-            ilike(users.bio, `%${q}%`)
-          )
+          or(ilike(users.name, `%${q}%`), ilike(users.bio, `%${q}%`))
         )
       )
       .limit(5);
-    
+
     res.json({
       courses: courseResults,
       lessons: lessonResults,
       instructors: instructorResults,
-      total: courseResults.length + lessonResults.length + instructorResults.length,
+      total:
+        courseResults.length + lessonResults.length + instructorResults.length,
       query: q,
     });
   } catch (error: any) {
@@ -284,14 +282,15 @@ export const searchRoutes = express.Router();
 });
 
 // Get search suggestions (autocomplete)
-(searchRoutes.get as any)('/suggestions', async (req: Request, res: Response) => {
+searchRoutes.get('/suggestions', async (req, res) => {
   try {
     const { q } = req.query;
-    
+
     if (!q || typeof q !== 'string' || q.length < 2) {
-      return res.json([]);
+      res.json([]);
+      return;
     }
-    
+
     // Get course title suggestions
     const suggestions = await db
       .select({
@@ -301,7 +300,7 @@ export const searchRoutes = express.Router();
       .from(courses)
       .where(ilike(courses.title, `${q}%`))
       .limit(5);
-    
+
     // Get category suggestions
     const categorySuggestions = await db
       .selectDistinct({
@@ -311,7 +310,7 @@ export const searchRoutes = express.Router();
       .from(courses)
       .where(ilike(courses.category, `${q}%`))
       .limit(3);
-    
+
     // Get tag suggestions
     const tagSuggestions = await db
       .select({
@@ -321,7 +320,7 @@ export const searchRoutes = express.Router();
       .from(courses)
       .where(sql`jsonb_array_elements_text(${courses.tags}) ILIKE ${q + '%'}`)
       .limit(3);
-    
+
     res.json([...suggestions, ...categorySuggestions, ...tagSuggestions]);
   } catch (error: any) {
     res.status(500).json({ error: error.message });

@@ -1,24 +1,30 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import express from 'express';
-import type { Request, Response } from 'express';
 import { db } from '../../../db';
-import { users, enrollments, courses, lessonProgress, certificates } from '../../../db/schema';
+import {
+  users,
+  enrollments,
+  courses,
+  lessonProgress,
+  certificates,
+} from '../../../db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
 export const userRoutes = express.Router();
 
 // Get current user profile (mock auth - uses hardcoded user ID)
-(userRoutes.get as any)('/me', async (req: Request, res: Response) => {
+userRoutes.get('/me', async (req, res) => {
   try {
     // In a real app, we'd get this from the auth token
     const userId = 'demo-user-id';
-    
+
     const user = await db
       .select()
       .from(users)
       .where(eq(users.id, userId))
       .limit(1);
-    
+
     if (!user.length) {
       // Create a demo user if not exists
       const newUser = await db
@@ -30,10 +36,11 @@ export const userRoutes = express.Router();
           role: 'student',
         })
         .returning();
-      
-      return res.json(newUser[0]);
+
+      res.json(newUser[0]);
+      return;
     }
-    
+
     res.json(user[0]);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -41,11 +48,11 @@ export const userRoutes = express.Router();
 });
 
 // Update user profile
-(userRoutes.put as any)('/me', async (req: Request, res: Response) => {
+userRoutes.put('/me', async (req, res) => {
   try {
     // In a real app, we'd get this from the auth token
     const userId = 'demo-user-id';
-    
+
     const updated = await db
       .update(users)
       .set({
@@ -54,11 +61,12 @@ export const userRoutes = express.Router();
       })
       .where(eq(users.id, userId))
       .returning();
-    
+
     if (!updated.length) {
-      return res.status(404).json({ error: 'User not found' });
+      res.status(404).json({ error: 'User not found' });
+      return;
     }
-    
+
     res.json(updated[0]);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -66,11 +74,11 @@ export const userRoutes = express.Router();
 });
 
 // Get user's enrollments
-(userRoutes.get as any)('/me/enrollments', async (req: Request, res: Response) => {
+userRoutes.get('/me/enrollments', async (req, res) => {
   try {
     // In a real app, we'd get this from the auth token
     const userId = 'demo-user-id';
-    
+
     const userEnrollments = await db
       .select({
         enrollment: enrollments,
@@ -82,7 +90,7 @@ export const userRoutes = express.Router();
       .innerJoin(users, eq(courses.instructorId, users.id))
       .where(eq(enrollments.userId, userId))
       .orderBy(desc(enrollments.enrolledAt));
-    
+
     // Get progress for each enrollment
     const enrollmentsWithProgress = await Promise.all(
       userEnrollments.map(async (e) => {
@@ -93,18 +101,18 @@ export const userRoutes = express.Router();
           })
           .from(lessonProgress)
           .where(eq(lessonProgress.enrollmentId, e.enrollment.id));
-        
+
         return {
           ...e.enrollment,
           course: {
             ...e.course,
             instructor: e.instructor,
           },
-          completedLessons: progress.filter(p => p.completedAt).length,
+          completedLessons: progress.filter((p) => p.completedAt).length,
         };
       })
     );
-    
+
     res.json(enrollmentsWithProgress);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -112,10 +120,10 @@ export const userRoutes = express.Router();
 });
 
 // Get user by ID (for instructors/admin)
-(userRoutes.get as any)('/users/:id', async (req: Request, res: Response) => {
+userRoutes.get('/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const user = await db
       .select({
         id: users.id,
@@ -129,11 +137,12 @@ export const userRoutes = express.Router();
       .from(users)
       .where(eq(users.id, id))
       .limit(1);
-    
+
     if (!user.length) {
-      return res.status(404).json({ error: 'User not found' });
+      res.status(404).json({ error: 'User not found' });
+      return;
     }
-    
+
     // Get user statistics
     const stats = await db
       .select({
@@ -146,7 +155,7 @@ export const userRoutes = express.Router();
       .leftJoin(certificates, eq(users.id, certificates.userId))
       .where(eq(users.id, id))
       .groupBy(users.id);
-    
+
     res.json({
       ...user[0],
       stats: stats[0] || {
@@ -161,11 +170,11 @@ export const userRoutes = express.Router();
 });
 
 // Get user's certificates
-(userRoutes.get as any)('/me/certificates', async (req: Request, res: Response) => {
+userRoutes.get('/me/certificates', async (req, res) => {
   try {
     // In a real app, we'd get this from the auth token
     const userId = 'demo-user-id';
-    
+
     const userCertificates = await db
       .select({
         certificate: certificates,
@@ -175,12 +184,12 @@ export const userRoutes = express.Router();
       .innerJoin(courses, eq(certificates.courseId, courses.id))
       .where(eq(certificates.userId, userId))
       .orderBy(desc(certificates.issuedAt));
-    
-    const result = userCertificates.map(c => ({
+
+    const result = userCertificates.map((c) => ({
       ...c.certificate,
       course: c.course,
     }));
-    
+
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -188,11 +197,11 @@ export const userRoutes = express.Router();
 });
 
 // Get user's learning statistics
-(userRoutes.get as any)('/me/stats', async (req: Request, res: Response) => {
+userRoutes.get('/me/stats', async (req, res) => {
   try {
     // In a real app, we'd get this from the auth token
     const userId = 'demo-user-id';
-    
+
     // Get overall statistics
     const overallStats = await db
       .select({
@@ -202,12 +211,15 @@ export const userRoutes = express.Router();
         lessonsCompleted: sql<number>`count(distinct case when ${lessonProgress.completedAt} is not null then ${lessonProgress.id} end)`,
       })
       .from(enrollments)
-      .leftJoin(lessonProgress, and(
-        eq(lessonProgress.enrollmentId, enrollments.id),
-        eq(lessonProgress.userId, userId)
-      ))
+      .leftJoin(
+        lessonProgress,
+        and(
+          eq(lessonProgress.enrollmentId, enrollments.id),
+          eq(lessonProgress.userId, userId)
+        )
+      )
       .where(eq(enrollments.userId, userId));
-    
+
     // Get learning streak (days in a row with activity)
     const activityDays = await db
       .select({
@@ -218,23 +230,23 @@ export const userRoutes = express.Router();
       .groupBy(sql`date(${lessonProgress.updatedAt})`)
       .orderBy(desc(sql`date(${lessonProgress.updatedAt})`))
       .limit(30);
-    
+
     // Calculate current streak
     let currentStreak = 0;
     const today = new Date();
-    const dates = activityDays.map(d => new Date(d.date));
-    
+    const dates = activityDays.map((d) => new Date(d.date));
+
     for (let i = 0; i < dates.length; i++) {
       const expectedDate = new Date(today);
       expectedDate.setDate(today.getDate() - i);
-      
+
       if (dates[i].toDateString() === expectedDate.toDateString()) {
         currentStreak++;
       } else {
         break;
       }
     }
-    
+
     res.json({
       ...overallStats[0],
       currentStreak,
@@ -246,10 +258,10 @@ export const userRoutes = express.Router();
 });
 
 // Create new user (for registration - mock implementation)
-(userRoutes.post as any)('/users', async (req: Request, res: Response) => {
+userRoutes.post('/users', async (req, res) => {
   try {
     const userId = createId();
-    
+
     const newUser = await db
       .insert(users)
       .values({
@@ -259,7 +271,7 @@ export const userRoutes = express.Router();
         role: req.body.role || 'student',
       })
       .returning();
-    
+
     res.json(newUser[0]);
   } catch (error: any) {
     res.status(500).json({ error: error.message });

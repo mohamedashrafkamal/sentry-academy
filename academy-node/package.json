@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch index.ts",
-    "build": "tsup && npx @sentry/wizard@latest -i sourcemaps --saas",
+    "build": "node build.js",
     "start": "node dist/index.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx db/migrate.ts",
@@ -18,20 +18,21 @@
     "@types/cors": "^2.8.18",
     "@types/express": "^5.0.2",
     "@types/node": "^20.0.0",
+    "dotenv": "^16.5.0",
     "drizzle-kit": "^0.31.1",
-    "tsup": "^8.5.0",
+    "esbuild": "^0.25.5",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
   },
   "dependencies": {
     "@paralleldrive/cuid2": "^2.2.2",
     "@sentry/cli": "^2.46.0",
+    "@sentry/esbuild-plugin": "^3.5.0",
     "@sentry/node": "^9.26.0",
     "@sentry/profiling-node": "^9.26.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.5.0",
     "drizzle-orm": "^0.44.2",
-    "express": "^4.18.0",
+    "express": "^5.1.0",
     "pg": "^8.16.0",
     "postgres": "^3.4.7"
   }
