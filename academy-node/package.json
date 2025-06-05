@@ -1,7 +1,6 @@
 {
   "name": "academy-node",
   "version": "1.0.0",
-  "type": "module",
   "private": true,
   "scripts": {
     "dev": "tsx watch index.ts",

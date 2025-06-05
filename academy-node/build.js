@@ -8,6 +8,7 @@ esbuild.build({
   bundle: true,
   minify: true,
   platform: 'node',
+  format: 'cjs',
   outdir: 'dist',
   allowOverwrite: true,
   plugins: [
