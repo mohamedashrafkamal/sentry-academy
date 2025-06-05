@@ -57,7 +57,8 @@ app.use('/api', searchRoutes);
 Sentry.setupExpressErrorHandler(app);
 
 // Error handling middleware
-app.use((err, req, res, next) => {
+// @ts-expect-error - implicit any
+app.use((err, req, res, _) => {
   const errorMsg = `💥 Error for ${req.method} ${req.url}: ${err}`;
   console.error(errorMsg);
   process.stderr.write(errorMsg + '\n');
