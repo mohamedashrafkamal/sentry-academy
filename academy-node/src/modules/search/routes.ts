@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import express from 'express';
 import { db } from '../../../db';
 import { courses, lessons, users } from '../../../db/schema';

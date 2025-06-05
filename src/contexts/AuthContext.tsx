@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { getUserById } from '../data/users';
 
@@ -11,15 +11,7 @@ interface AuthContextType {
   ssoLogin: (provider: string) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -48,10 +40,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // This is a mock implementation
       // In a real app, this would call an API
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Simulate a successful login with the first user
       const loggedInUser = getUserById('1');
-      
+
       if (loggedInUser) {
         setUser(loggedInUser);
         setIsAuthenticated(true);
@@ -73,10 +65,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // This is a mock implementation
       // In a real app, this would redirect to the SSO provider
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Simulate a successful SSO login with the first user
       const loggedInUser = getUserById('1');
-      
+
       if (loggedInUser) {
         setUser(loggedInUser);
         setIsAuthenticated(true);

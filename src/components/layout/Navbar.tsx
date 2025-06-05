@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Search, Bell, Menu } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -13,7 +13,7 @@ const Navbar: React.FC = () => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 1000);
-  
+
   // Initialize search query from URL on mount
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -21,7 +21,7 @@ const Navbar: React.FC = () => {
     if (searchParam && searchParam !== searchQuery) {
       setSearchQuery(searchParam);
     }
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, searchQuery]);
 
   const handleLogout = () => {
     logout();
@@ -33,7 +33,7 @@ const Navbar: React.FC = () => {
     // Only proceed if there's a debounced search query different from URL
     const currentParams = new URLSearchParams(location.search);
     const currentSearchParam = currentParams.get('search') || '';
-    
+
     if (debouncedSearchQuery.trim() && debouncedSearchQuery !== currentSearchParam) {
       // If we're already on the courses page, update the URL without navigation
       if (location.pathname === '/courses') {
@@ -53,7 +53,7 @@ const Navbar: React.FC = () => {
         navigate(newUrl, { replace: true });
       }
     }
-  }, [debouncedSearchQuery]);
+  }, [debouncedSearchQuery, location.pathname, location.search, navigate]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -86,21 +86,21 @@ const Navbar: React.FC = () => {
             />
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-4">
           <button className="relative text-gray-500 hover:text-gray-700 focus:outline-none">
             <Bell className="h-6 w-6" />
             <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"></span>
           </button>
-          
+
           <div className="relative">
             <button
               className="flex items-center space-x-2 text-gray-700 focus:outline-none"
               onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
             >
               {user && (
-                <Avatar 
-                  src={user.avatar} 
+                <Avatar
+                  src={user.avatar}
                   alt={user.name}
                   fallback={user.name}
                   size="sm"
@@ -108,7 +108,7 @@ const Navbar: React.FC = () => {
               )}
               <span className="hidden md:block text-sm font-medium">{user?.name}</span>
             </button>
-            
+
             {isProfileMenuOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
                 <a href="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">

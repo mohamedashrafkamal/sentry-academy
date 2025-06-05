@@ -173,7 +173,7 @@ Sentry.init({
   dsn: "YOUR_SENTRY_DSN",
   integrations: [
     new Integrations.BrowserTracing({
-      tracingOrigins: ["localhost", "yourapp.com", /^\//],
+      tracingOrigins: ["localhost", "yourapp.com", /^//],
     }),
   ],
   tracesSampleRate: 1.0, // Adjust for production
@@ -198,7 +198,7 @@ try {
   await processPayment();
   await updateInventory();
   await sendConfirmationEmail();
-  
+
   transaction.setStatus("ok");
 } catch (error) {
   transaction.setStatus("internal_error");
@@ -256,7 +256,7 @@ getTTFB(sendToAnalytics);
 // Monitor resource loading performance
 function trackResourceTiming() {
   const resources = performance.getEntriesByType('resource');
-  
+
   resources.forEach(resource => {
     if (resource.duration > 1000) { // Flag slow resources
       Sentry.addBreadcrumb({
@@ -323,7 +323,7 @@ mongoose.set('debug', (collectionName, method, query, doc) => {
       op: 'db.query',
       description: \`\${collectionName}.\${method}\`
     });
-    
+
     childSpan.setData('query', query);
     childSpan.finish();
   }
@@ -518,7 +518,7 @@ function findDuplicates(arr) {
 function findDuplicatesEfficient(arr) {
   const seen = new Set();
   const duplicates = new Set();
-  
+
   for (const item of arr) {
     if (seen.has(item)) {
       duplicates.add(item);
@@ -526,7 +526,7 @@ function findDuplicatesEfficient(arr) {
       seen.add(item);
     }
   }
-  
+
   return Array.from(duplicates);
 }
 \`\`\`
@@ -548,5 +548,5 @@ function findDuplicatesEfficient(arr) {
 ### 3. Baseline Before Optimization
 Establish performance baselines before making changes to measure improvements accurately.
 
-Effective profiling is an iterative process that combines tool usage with analytical thinking to systematically improve application performance.`
+Effective profiling is an iterative process that combines tool usage with analytical thinking to systematically improve application performance.`,
 };
