@@ -1,5 +1,4 @@
-import 'dotenv/config';
-import "./instrument";
+import './instrument';
 import express from 'express';
 import cors from 'cors';
 import { courseRoutes } from './src/modules/courses/routes';
@@ -7,27 +6,35 @@ import { lessonRoutes } from './src/modules/lessons/routes';
 import { userRoutes } from './src/modules/users/routes';
 import { enrollmentRoutes } from './src/modules/enrollments/routes';
 import { searchRoutes } from './src/modules/search/routes';
-import * as Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:3000',
+    ],
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 
 // Request logging middleware
-app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-  Sentry.logger.info('Request received');
-  const logMessage = `🌐 ${req.method} ${req.url}`;
-  console.log(logMessage);
-  process.stdout.write(logMessage + '\n');
-  next();
-});
+app.use(
+  (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    Sentry.logger.info('Request received');
+    const logMessage = `🌐 ${req.method} ${req.url}`;
+    console.log(logMessage);
+    process.stdout.write(logMessage + '\n');
+    next();
+  }
+);
 
 // Root route
 app.get('/', (req: express.Request, res: express.Response) => {
@@ -47,17 +54,19 @@ app.use('/api', userRoutes);
 app.use('/api', enrollmentRoutes);
 app.use('/api', searchRoutes);
 
+Sentry.setupExpressErrorHandler(app);
+
 // Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: unknown, req: express.Request, res: express.Response) => {
   const errorMsg = `💥 Error for ${req.method} ${req.url}: ${err}`;
   console.error(errorMsg);
   process.stderr.write(errorMsg + '\n');
-  
+
   res.status(500).json({
     error: true,
     message: err instanceof Error ? err.message : 'Internal server error',
     code: 'INTERNAL_ERROR',
-    path: req.path
+    path: req.path,
   });
 });
 
