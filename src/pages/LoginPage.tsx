@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { GraduationCap } from 'lucide-react';
 import LoginForm from '../components/auth/LoginForm';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 const LoginPage: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -25,11 +25,11 @@ const LoginPage: React.FC = () => {
                 </h1>
               </div>
             </div>
-            
+
             <LoginForm />
           </div>
         </div>
-        
+
         {/* Right side - image and copy */}
         <div className="hidden md:block md:w-1/2 bg-blue-700 text-white">
           <div className="h-full flex items-center">
@@ -38,18 +38,18 @@ const LoginPage: React.FC = () => {
               <p className="text-xl mb-8 text-blue-100">
                 Join thousands of developers learning advanced software development techniques.
               </p>
-              
+
               <div className="bg-white bg-opacity-10 p-6 rounded-lg backdrop-blur-sm">
                 <p className="italic text-blue-50 mb-4">
-                  "Sentry Academy has been instrumental in helping our team implement 
-                  robust observability practices. The courses are practical and directly 
+                  "Sentry Academy has been instrumental in helping our team implement
+                  robust observability practices. The courses are practical and directly
                   applicable to our daily work."
                 </p>
                 <div className="flex items-center">
-                  <img 
-                    src="https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg" 
-                    alt="User testimonial" 
-                    className="w-10 h-10 rounded-full mr-3 object-cover" 
+                  <img
+                    src="https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg"
+                    alt="User testimonial"
+                    className="w-10 h-10 rounded-full mr-3 object-cover"
                   />
                   <div>
                     <p className="font-medium">Michael Chen</p>

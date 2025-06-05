@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { getFavoriteCourses } from '../data/users';
 import { getCourseById } from '../data/courses';
 import { Course } from '../types';
@@ -11,16 +11,16 @@ import { useNavigate } from 'react-router-dom';
 const FavoritesPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
   let favoriteCourses: Course[] = [];
-  
+
   if (user) {
     const favoriteIds = getFavoriteCourses(user.id);
     favoriteCourses = favoriteIds
       .map(id => getCourseById(id))
       .filter((course): course is Course => course !== undefined);
   }
-  
+
   return (
     <div className="container mx-auto max-w-7xl">
       <div className="mb-8">
@@ -29,7 +29,7 @@ const FavoritesPage: React.FC = () => {
           Courses you've bookmarked for later
         </p>
       </div>
-      
+
       {favoriteCourses.length === 0 ? (
         <div className="bg-white p-8 rounded-lg text-center shadow-sm border border-gray-100">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">No favorites yet</h2>

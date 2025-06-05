@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { getUserProgress } from '../data/users';
 import { getCourseById } from '../data/courses';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
@@ -12,17 +12,17 @@ const LessonPlanItem: React.FC<{
 }> = ({ progress }) => {
   const navigate = useNavigate();
   const course = getCourseById(progress.courseId);
-  
+
   if (!course) return null;
-  
+
   const totalLessons = course.lessons.length;
   const completedCount = progress.completedLessons.length;
   const percentComplete = (completedCount / totalLessons) * 100;
-  
+
   const handleClick = () => {
     navigate(`/courses/${course.id}`);
   };
-  
+
   return (
     <Card className="hover:shadow-md transition-shadow" onClick={handleClick} hoverEffect>
       <CardHeader className="pb-4">
@@ -36,13 +36,13 @@ const LessonPlanItem: React.FC<{
             <span className="font-medium">{Math.round(percentComplete)}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full" 
+            <div
+              className="bg-blue-600 h-2 rounded-full"
               style={{ width: `${percentComplete}%` }}
             />
           </div>
         </div>
-        
+
         <div className="flex justify-between text-sm text-gray-600">
           <div className="flex items-center">
             <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
@@ -50,7 +50,7 @@ const LessonPlanItem: React.FC<{
               {completedCount} of {totalLessons} lessons
             </span>
           </div>
-          
+
           <div className="flex items-center">
             <Clock className="h-4 w-4 mr-1" />
             <span>{course.duration}</span>
@@ -64,13 +64,13 @@ const LessonPlanItem: React.FC<{
 const LessonPlansPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
   let progressData: Progress[] = [];
-  
+
   if (user) {
     progressData = getUserProgress(user.id);
   }
-  
+
   return (
     <div className="container mx-auto max-w-7xl">
       <div className="mb-8">
@@ -79,7 +79,7 @@ const LessonPlansPage: React.FC = () => {
           Track your progress across all your courses
         </p>
       </div>
-      
+
       {progressData.length === 0 ? (
         <div className="bg-white p-8 rounded-lg text-center shadow-sm border border-gray-100">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">No lesson plans yet</h2>
@@ -97,9 +97,9 @@ const LessonPlansPage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {progressData.map((progress) => (
-            <LessonPlanItem 
-              key={progress.courseId} 
-              progress={progress} 
+            <LessonPlanItem
+              key={progress.courseId}
+              progress={progress}
             />
           ))}
         </div>

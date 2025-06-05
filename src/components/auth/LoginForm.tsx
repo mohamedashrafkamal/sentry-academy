@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GithubIcon, FileIcon as GoogleIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../ui/Button';
 
 const SSOButton: React.FC<{
@@ -26,7 +26,7 @@ const LoginForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   const { login, ssoLogin } = useAuth();
   const navigate = useNavigate();
 
@@ -34,7 +34,7 @@ const LoginForm: React.FC = () => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-    
+
     try {
       await login(email, password);
       navigate('/');
@@ -48,7 +48,7 @@ const LoginForm: React.FC = () => {
   const handleSSO = async (provider: string) => {
     setError('');
     setIsLoading(true);
-    
+
     try {
       await ssoLogin(provider);
       navigate('/');
@@ -65,7 +65,7 @@ const LoginForm: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">Welcome to Sentry Academy</h1>
         <p className="text-gray-600 mt-2">Sign in to continue learning</p>
       </div>
-      
+
       <div className="space-y-4 mb-6">
         <SSOButton
           icon={<GoogleIcon size={20} />}
@@ -80,7 +80,7 @@ const LoginForm: React.FC = () => {
           onClick={handleSSO}
         />
       </div>
-      
+
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-gray-300"></div>
@@ -89,14 +89,14 @@ const LoginForm: React.FC = () => {
           <span className="px-2 bg-white text-gray-500">Or continue with</span>
         </div>
       </div>
-      
+
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
             {error}
           </div>
         )}
-        
+
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
             Email Address
@@ -111,7 +111,7 @@ const LoginForm: React.FC = () => {
             required
           />
         </div>
-        
+
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
             Password
@@ -135,7 +135,7 @@ const LoginForm: React.FC = () => {
             </button>
           </div>
         </div>
-        
+
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <input
@@ -152,7 +152,7 @@ const LoginForm: React.FC = () => {
             Forgot password?
           </a>
         </div>
-        
+
         <Button
           type="submit"
           variant="primary"
@@ -162,7 +162,7 @@ const LoginForm: React.FC = () => {
           Sign in
         </Button>
       </form>
-      
+
       <p className="mt-6 text-center text-sm text-gray-600">
         Don't have an account?{' '}
         <a href="#" className="font-medium text-blue-600 hover:text-blue-800">

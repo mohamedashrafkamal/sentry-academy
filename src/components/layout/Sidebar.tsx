@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { 
-  BookOpen, 
-  Home, 
-  Layers, 
-  Star, 
-  User, 
-  Settings, 
-  ChevronLeft, 
+import { useAuth } from '../../hooks/useAuth';
+import {
+  BookOpen,
+  Home,
+  Layers,
+  Star,
+  User,
+  Settings,
+  ChevronLeft,
   ChevronRight,
   Bookmark,
   GraduationCap
@@ -17,16 +17,16 @@ import { Avatar } from '../ui/Avatar';
 
 interface SidebarItemProps {
   to: string;
-  icon: JSX.Element;
+  icon: React.ReactNode;
   label: string;
   isActive?: boolean;
   isCollapsed?: boolean;
 }
 
-const SidebarItem: React.FC<SidebarItemProps> = ({ 
-  to, 
-  icon, 
-  label, 
+const SidebarItem: React.FC<SidebarItemProps> = ({
+  to,
+  icon,
+  label,
   isActive = false,
   isCollapsed = false
 }) => {
@@ -34,8 +34,8 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
     <Link
       to={to}
       className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-        isActive 
-          ? 'bg-blue-50 text-blue-700' 
+        isActive
+          ? 'bg-blue-50 text-blue-700'
           : 'text-gray-700 hover:bg-gray-100'
       }`}
     >
@@ -77,13 +77,13 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
           {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
       </div>
-      
+
       {user && !isCollapsed && (
         <div className="px-4 py-3 mb-4 border-b border-gray-200">
           <div className="flex items-center">
-            <Avatar 
-              src={user.avatar} 
-              alt={user.name} 
+            <Avatar
+              src={user.avatar}
+              alt={user.name}
               fallback={user.name}
               size="md"
             />
@@ -94,57 +94,57 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
           </div>
         </div>
       )}
-      
+
       <nav className="flex-1 px-2 space-y-1 overflow-y-auto">
-        <SidebarItem 
-          to="/" 
-          icon={<Home size={20} />} 
-          label="Home" 
+        <SidebarItem
+          to="/"
+          icon={<Home size={20} />}
+          label="Home"
           isActive={isActive('/')}
           isCollapsed={isCollapsed}
         />
-        <SidebarItem 
-          to="/courses" 
-          icon={<BookOpen size={20} />} 
-          label="All Courses" 
+        <SidebarItem
+          to="/courses"
+          icon={<BookOpen size={20} />}
+          label="All Courses"
           isActive={isActive('/courses')}
           isCollapsed={isCollapsed}
         />
-        <SidebarItem 
-          to="/my-courses" 
-          icon={<Layers size={20} />} 
-          label="My Courses" 
+        <SidebarItem
+          to="/my-courses"
+          icon={<Layers size={20} />}
+          label="My Courses"
           isActive={isActive('/my-courses')}
           isCollapsed={isCollapsed}
         />
-        <SidebarItem 
-          to="/favorites" 
-          icon={<Star size={20} />} 
-          label="Favorites" 
+        <SidebarItem
+          to="/favorites"
+          icon={<Star size={20} />}
+          label="Favorites"
           isActive={isActive('/favorites')}
           isCollapsed={isCollapsed}
         />
-        <SidebarItem 
-          to="/lesson-plans" 
-          icon={<Bookmark size={20} />} 
-          label="Lesson Plans" 
+        <SidebarItem
+          to="/lesson-plans"
+          icon={<Bookmark size={20} />}
+          label="Lesson Plans"
           isActive={isActive('/lesson-plans')}
           isCollapsed={isCollapsed}
         />
       </nav>
-      
+
       <div className="border-t border-gray-200 px-2 py-3 space-y-1">
-        <SidebarItem 
-          to="/profile" 
-          icon={<User size={20} />} 
-          label="Profile" 
+        <SidebarItem
+          to="/profile"
+          icon={<User size={20} />}
+          label="Profile"
           isActive={isActive('/profile')}
           isCollapsed={isCollapsed}
         />
-        <SidebarItem 
-          to="/settings" 
-          icon={<Settings size={20} />} 
-          label="Settings" 
+        <SidebarItem
+          to="/settings"
+          icon={<Settings size={20} />}
+          label="Settings"
           isActive={isActive('/settings')}
           isCollapsed={isCollapsed}
         />

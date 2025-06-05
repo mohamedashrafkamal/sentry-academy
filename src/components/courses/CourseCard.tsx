@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Course } from '../../types';
 import { Card, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { api } from '../../services/api';
 
 interface CourseCardProps {
@@ -15,9 +15,9 @@ interface CourseCardProps {
   showEnrollButton?: boolean;
 }
 
-const CourseCard: React.FC<CourseCardProps> = ({ 
-  course, 
-  className = '', 
+const CourseCard: React.FC<CourseCardProps> = ({
+  course,
+  className = '',
   isEnrolled = false,
   onEnrollmentChange,
   showEnrollButton = true
@@ -25,7 +25,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isEnrolling, setIsEnrolling] = useState(false);
-  
+
   const getLevelBadgeVariant = (level: string) => {
     switch (level) {
       case 'beginner':
@@ -45,7 +45,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
 
   const handleEnroll = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
-    
+
     if (!user?.id) {
       alert('Please log in to enroll in courses');
       return;
@@ -64,15 +64,15 @@ const CourseCard: React.FC<CourseCardProps> = ({
   };
 
   return (
-    <Card 
+    <Card
       className={`h-full transition-all duration-300 hover:shadow-md ${className}`}
       hoverEffect
       onClick={handleClick}
     >
       <div className="relative h-40 overflow-hidden">
-        <img 
-          src={course.thumbnail} 
-          alt={course.title} 
+        <img
+          src={course.thumbnail}
+          alt={course.title}
           className="w-full h-full object-cover"
         />
         {course.isFeatured && (
@@ -81,7 +81,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
           </div>
         )}
       </div>
-      
+
       <CardContent className="space-y-3">
         <div className="flex justify-between items-start">
           <div>
@@ -89,25 +89,25 @@ const CourseCard: React.FC<CourseCardProps> = ({
             <p className="text-sm text-gray-600 mt-1">By {course.instructor}</p>
           </div>
         </div>
-        
+
         <p className="text-sm text-gray-700 line-clamp-2">{course.description}</p>
-        
+
         <div className="flex items-center justify-between text-sm pt-2">
           <div className="flex items-center text-yellow-500">
             <Star className="h-4 w-4 fill-current" />
             <span className="ml-1 font-medium">{course.rating}</span>
             <span className="ml-1 text-gray-500">({course.reviewCount})</span>
           </div>
-          
+
           <div className="flex items-center text-gray-600">
             <Clock className="h-4 w-4" />
             <span className="ml-1">{course.duration}</span>
           </div>
-          
+
           <div className="flex items-center">
-            <Badge 
-              variant={getLevelBadgeVariant(course.level)} 
-              size="sm" 
+            <Badge
+              variant={getLevelBadgeVariant(course.level)}
+              size="sm"
               className="flex items-center"
             >
               <Award className="h-3 w-3 mr-1" />
