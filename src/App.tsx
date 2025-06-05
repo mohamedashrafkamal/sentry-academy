@@ -12,7 +12,7 @@ import LessonPlansPage from './pages/LessonPlansPage';
 import ProfilePage from './pages/ProfilePage';
 import * as Sentry from '@sentry/react';
 
-const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
+const SentryRoutes = Sentry.withSentryReactRouterV7Routing(Routes);
 
 // Protected route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {

@@ -19,7 +19,7 @@ Sentry.init({
   },
 
   integrations: [
-    Sentry.reactRouterV6BrowserTracingIntegration({
+    Sentry.reactRouterV7BrowserTracingIntegration({
       useEffect: React.useEffect,
       useLocation,
       useNavigationType,
