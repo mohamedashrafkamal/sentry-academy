@@ -1,0 +1,117 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Project Context - Sentry Academy Workshop
+
+## Monorepo Structure
+
+This is a pnpm monorepo with the following structure:
+
+```
+.
+├── apps
+│   ├── frontend          # React + Vite frontend application
+│   └── server           # Node.js + Express backend server
+├── package.json         # Root workspace configuration
+├── pnpm-lock.yaml      # pnpm lockfile
+├── pnpm-workspace.yaml # Workspace configuration
+├── README.md
+└── scripts
+    └── example_prd.txt
+```
+
+## Package Configurations
+
+### Frontend Package (@sentry-academy/frontend)
+
+**Technology Stack:**
+- **Framework:** React 19.1.0 with React DOM
+- **Build Tool:** Vite 5.4.2
+- **Language:** TypeScript 5.5.3
+- **Styling:** Tailwind CSS 4.1.8
+- **Routing:** React Router DOM 7.6.2
+- **Icons:** Lucide React 0.513.0
+- **Markdown:** React Markdown 10.1.0 with rehype-highlight
+- **Monitoring:** Sentry React SDK 9.26.0
+- **Linting:** ESLint 9.9.1 with React-specific plugins
+
+**Scripts:**
+- `dev` - Start Vite development server
+- `build` - Build for production
+- `lint` - Run ESLint
+- `preview` - Preview production build
+
+**Key Features:**
+- Modern React 19 with latest features
+- Vite for fast development and building
+- Tailwind CSS for styling
+- Full TypeScript support
+- Sentry integration for error monitoring
+- Markdown rendering capabilities
+
+### Server Package (@sentry-academy/server)
+
+**Technology Stack:**
+- **Runtime:** Node.js with Express 5.1.0
+- **Language:** TypeScript 5.0.0
+- **Database ORM:** Drizzle ORM 0.44.2 with PostgreSQL
+- **Database Drivers:** pg 8.16.0, postgres 3.4.7
+- **Build Tool:** esbuild 0.25.5
+- **Development:** tsx 4.0.0 for TypeScript execution
+- **Monitoring:** Sentry Node SDK 9.26.0 with profiling
+- **CORS:** cors 2.8.5
+- **ID Generation:** @paralleldrive/cuid2 2.2.2
+
+**Scripts:**
+- `dev` - Start development server with hot reload
+- `build` - Build for production
+- `start` - Start production server
+- `db:generate` - Generate database migrations
+- `db:migrate` - Run database migrations
+- `db:push` - Push schema changes to database
+- `db:studio` - Open Drizzle Studio
+- `db:seed` - Seed database with initial data
+- `db:create-readonly-user` - Create read-only database user
+
+**Key Features:**
+- Express.js web server
+- PostgreSQL database with Drizzle ORM
+- Full TypeScript support
+- Database migration system
+- Sentry integration for error monitoring and profiling
+- CORS enabled for frontend communication
+- Hot reload development environment
+
+## Development Workflow
+
+### Getting Started
+1. Install dependencies: `pnpm install`
+2. Start both apps: `pnpm dev`
+3. Frontend runs on: `http://localhost:5173`
+4. Server runs on: `http://localhost:3000`
+
+### Individual Development
+- Frontend only: `pnpm dev:frontend`
+- Server only: `pnpm dev:server`
+
+### Building
+- Build all: `pnpm build`
+- Build frontend: `pnpm build:frontend`
+- Build server: `pnpm build:server`
+
+## Monitoring & Observability
+
+Both applications are configured with Sentry:
+- **Frontend:** @sentry/react for error tracking and performance monitoring
+- **Server:** @sentry/node with profiling for backend monitoring
+- Shared `.sentryclirc` configuration file
+
+## Database Management
+
+The server uses Drizzle ORM with PostgreSQL:
+- Schema generation and migrations
+- Database studio for visual management
+- Seeding capabilities
+- Read-only user creation for secure access
