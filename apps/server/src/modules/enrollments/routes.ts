@@ -128,7 +128,7 @@ enrollmentRoutes.post('/enrollments', async (req, res) => {
 });
 
 // Get user's enrollments
-enrollmentRoutes.get('/user/:userId', async (req, res) => {
+enrollmentRoutes.get('/enrollments/user/:userId', async (req, res) => {
   const { userId } = req.params;
   console.log('📚 Getting enrollments for user:', userId);
 
