@@ -6,7 +6,7 @@ import { Button } from '../ui/Button';
 const HeroSection: React.FC = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = React.useState('');
-  
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     navigate(`/courses?search=${encodeURIComponent(searchQuery)}`);
@@ -15,16 +15,16 @@ const HeroSection: React.FC = () => {
   return (
     <div className="relative bg-gradient-to-r from-blue-900 to-indigo-800 text-white rounded-2xl overflow-hidden">
       <div className="absolute inset-0 opacity-10 bg-[url('https://images.pexels.com/photos/7103/writing-notes-idea-conference.jpg')] bg-cover bg-center" />
-      
+
       <div className="relative z-10 px-8 py-16 md:px-12 md:py-24 max-w-4xl">
         <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
           Become an Expert in Observability and Software Development
         </h1>
-        
+
         <p className="text-xl md:text-2xl mb-8 text-blue-100 max-w-2xl">
           Join thousands of developers mastering modern software practices with our curated courses
         </p>
-        
+
         <form onSubmit={handleSearch} className="max-w-lg relative mb-8">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
@@ -32,7 +32,7 @@ const HeroSection: React.FC = () => {
             </div>
             <input
               type="search"
-              className="block w-full pl-12 pr-20 py-4 bg-white bg-opacity-10 backdrop-blur-md border border-white border-opacity-20 rounded-lg focus:ring-blue-500 focus:border-blue-500 placeholder:text-white placeholder:text-opacity-60 text-white"
+              className="block w-full pl-4 pr-20 py-4 bg-white text-black bg-opacity-10 backdrop-blur-md border border-white border-opacity-20 rounded-lg focus:ring-blue-500 focus:border-blue-500 placeholder:text-black/30 placeholder:text-opacity-60"
               placeholder="Search for courses..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -45,7 +45,7 @@ const HeroSection: React.FC = () => {
             </Button>
           </div>
         </form>
-        
+
         <div className="flex flex-wrap gap-4 items-center mt-8">
           <div className="flex -space-x-2">
             {[1, 2, 3, 4, 5].map((i) => (
