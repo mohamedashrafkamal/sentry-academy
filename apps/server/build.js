@@ -11,6 +11,7 @@ esbuild.build({
   format: 'cjs',
   outdir: 'dist',
   allowOverwrite: true,
+  external: ['express', 'drizzle-orm', 'pg'],
   plugins: [
     sentryEsbuildPlugin({
       authToken: process.env.SENTRY_AUTH_TOKEN,
