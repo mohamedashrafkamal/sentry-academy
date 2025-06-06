@@ -14,14 +14,12 @@ const Navbar: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 1000);
 
-  // Initialize search query from URL on mount
+  // Initialize search query from URL on mount and when navigating to different pages
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const searchParam = params.get('search');
-    if (searchParam && searchParam !== searchQuery) {
-      setSearchQuery(searchParam);
-    }
-  }, [location.pathname, location.search, searchQuery]);
+    const searchParam = params.get('search') || '';
+    setSearchQuery(searchParam);
+  }, [location.pathname]); // Only when pathname changes, not on every search update
 
   const handleLogout = () => {
     logout();
@@ -35,17 +33,17 @@ const Navbar: React.FC = () => {
     const currentSearchParam = currentParams.get('search') || '';
 
     if (debouncedSearchQuery.trim() && debouncedSearchQuery !== currentSearchParam) {
-      // If we're already on the courses page, update the URL without navigation
+      // If we're already on the courses listing page (not a specific course), update the URL without navigation
       if (location.pathname === '/courses') {
         const params = new URLSearchParams(location.search);
         params.set('search', debouncedSearchQuery);
         navigate(`/courses?${params.toString()}`, { replace: true });
-      } else {
-        // Navigate to courses page with search
+      } else if (!location.pathname.startsWith('/courses/')) {
+        // Only navigate to courses page with search if we're not on a course detail page
         navigate(`/courses?search=${encodeURIComponent(debouncedSearchQuery)}`);
       }
     } else if (!debouncedSearchQuery.trim() && currentSearchParam) {
-      // Clear search parameter if search is empty but URL has search
+      // Clear search parameter if search is empty but URL has search (only on courses listing page)
       if (location.pathname === '/courses') {
         const params = new URLSearchParams(location.search);
         params.delete('search');

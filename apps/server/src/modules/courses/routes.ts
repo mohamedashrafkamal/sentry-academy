@@ -55,7 +55,9 @@ courseRoutes.get('/courses', async (req, res) => {
       .orderBy(desc(courses.createdAt));
 
     console.log('Query completed, returning', courseList.length, 'courses');
-    logger.info('Query completed, returning courses');
+    logger.info(
+      logger.fmt`Query completed, returning ${courseList.length} courses`
+    );
     res.json(courseList);
   } catch (error) {
     console.error('Database error in courses route:', error);

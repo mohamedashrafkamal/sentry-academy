@@ -51,8 +51,9 @@ const CoursesPage: React.FC = () => {
         course =>
           course.title.toLowerCase().includes(query) ||
           course.description.toLowerCase().includes(query) ||
-          course.tags?.some(tag => tag.toLowerCase().includes(query))
+          course.tags?.some((tag: string) => tag.toLowerCase().includes(query))
       );
+      
     }
 
     // Filter by category

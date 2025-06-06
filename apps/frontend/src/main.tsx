@@ -29,17 +29,15 @@ Sentry.init({
     Sentry.replayIntegration(),
   ],
 
-  debug: false,
+  debug: true,
 
-  tracesSampleRate: 0.9,
+  tracesSampleRate: 1.0,
   tracePropagationTargets: ['localhost:3001'],
 
-	replaysSessionSampleRate: 0.1,
+	replaysSessionSampleRate: 1.0,
 	replaysOnErrorSampleRate: 1.0,
 });
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
     <App />
-  </StrictMode>
 );

@@ -13,7 +13,7 @@ const SSOButton: React.FC<{
   <button
     type="button"
     onClick={() => onClick(provider)}
-    className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2 px-4 text-gray-700 hover:bg-gray-50 transition-colors"
+    className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2 px-4 text-gray-700 hover:bg-purple-50 hover:border-purple-300 transition-colors"
   >
     {icon}
     <span>{label}</span>
@@ -60,7 +60,7 @@ const LoginForm: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md w-full mx-auto bg-white rounded-xl shadow-sm p-8 border border-gray-200">
+    <div className="max-w-md w-full mx-auto bg-white rounded-xl shadow-lg p-8 border border-gray-200">
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-bold text-gray-900">Welcome to Sentry Academy</h1>
         <p className="text-gray-600 mt-2">Sign in to continue learning</p>
@@ -92,7 +92,7 @@ const LoginForm: React.FC = () => {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
+          <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm border border-red-200">
             {error}
           </div>
         )}
@@ -106,7 +106,7 @@ const LoginForm: React.FC = () => {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-900"
             placeholder="you@example.com"
             required
           />
@@ -122,7 +122,7 @@ const LoginForm: React.FC = () => {
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-900"
               placeholder="•••••••••"
               required
             />
@@ -142,13 +142,13 @@ const LoginForm: React.FC = () => {
               id="remember-me"
               name="remember-me"
               type="checkbox"
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
             />
             <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
               Remember me
             </label>
           </div>
-          <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-800">
+          <a href="#" className="text-sm font-medium text-purple-600 hover:text-purple-800">
             Forgot password?
           </a>
         </div>
@@ -165,7 +165,7 @@ const LoginForm: React.FC = () => {
 
       <p className="mt-6 text-center text-sm text-gray-600">
         Don't have an account?{' '}
-        <a href="#" className="font-medium text-blue-600 hover:text-blue-800">
+        <a href="#" className="font-medium text-purple-600 hover:text-purple-800">
           Create one now
         </a>
       </p>

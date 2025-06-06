@@ -27,11 +27,11 @@ export const Button: React.FC<ButtonProps> = ({
   const baseClasses = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
   
   const variantClasses = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500',
-    secondary: 'bg-blue-100 text-blue-900 hover:bg-blue-200 focus-visible:ring-blue-500',
+    primary: 'bg-purple-600 text-white hover:bg-purple-700 focus-visible:ring-purple-500',
+    secondary: 'bg-purple-100 text-purple-900 hover:bg-purple-200 focus-visible:ring-purple-500',
     outline: 'border border-gray-300 bg-transparent hover:bg-gray-100 focus-visible:ring-gray-500',
     ghost: 'bg-transparent hover:bg-gray-100 focus-visible:ring-gray-500',
-    link: 'bg-transparent underline-offset-4 hover:underline text-blue-600 hover:text-blue-800 p-0 h-auto'
+    link: 'bg-transparent underline-offset-4 hover:underline text-purple-600 hover:text-purple-800 p-0 h-auto'
   };
   
   const sizeClasses = {
