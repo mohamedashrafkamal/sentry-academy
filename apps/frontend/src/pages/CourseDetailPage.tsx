@@ -16,17 +16,15 @@ import LessonList from '../components/lessons/LessonList';
 import LessonContent from '../components/lessons/LessonContent';
 import { api } from '../services/api';
 import { useApi } from '../hooks/useApi';
-import { getCourseById } from '../data/courses';
 
 const CourseDetailPage: React.FC = () => {
   const { courseId = '' } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
 
   const getCourse = useCallback(() => api.courses.getById(courseId), [courseId]);
-  const { data: apiCourse, loading } = useApi(getCourse);
+  const { data: course, loading } = useApi(getCourse);
 
   // Fallback to static data if API fails or course not found
-  const course = apiCourse || getCourseById(courseId);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
 
@@ -53,7 +51,7 @@ const CourseDetailPage: React.FC = () => {
   };
 
   const handleSelectLesson = (lessonId: string) => {
-    const lesson = course?.lessons?.find(l => l.id === lessonId);
+    const lesson = course.lessons?.find((l: Lesson) => l.id === lessonId);
     if (lesson) {
       setActiveLesson(lesson);
     }
@@ -180,7 +178,7 @@ const CourseDetailPage: React.FC = () => {
               <>
                 <h3 className="text-lg font-semibold mt-6 mb-2">What you'll learn</h3>
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-gray-700">
-                  {course.learningObjectives.map((objective, index) => (
+                  {course.learningObjectives.map((objective: string, index: number) => (
                     <li key={index} className="flex items-start">
                       <span className="text-green-500 mr-2">✓</span>
                       {objective}
@@ -194,7 +192,7 @@ const CourseDetailPage: React.FC = () => {
               <>
                 <h3 className="text-lg font-semibold mt-6 mb-2">Prerequisites</h3>
                 <ul className="space-y-2 text-gray-700">
-                  {course.prerequisites.map((prereq, index) => (
+                  {course.prerequisites.map((prereq: string, index: number) => (
                     <li key={index} className="flex items-start">
                       <span className="text-blue-500 mr-2">•</span>
                       {prereq}

@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Search, Bell, Menu } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
-import { useDebounce } from '../../hooks/useDebounce';
+import { useDebounceCallback } from '../../hooks/useDebounce';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const debouncedSearchQuery = useDebounce(searchQuery, 1000);
+  const [searchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
 
   // Initialize search query from URL on mount and when navigating to different pages
   useEffect(() => {
@@ -20,6 +20,11 @@ const Navbar: React.FC = () => {
     const searchParam = params.get('search') || '';
     setSearchQuery(searchParam);
   }, [location.pathname]); // Only when pathname changes, not on every search update
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    navigate(`/courses?search=${encodeURIComponent(e.target.value)}`);
+  };
+  const debouncedSearch = useDebounceCallback(handleSearchChange, 1000);
 
   const handleLogout = () => {
     logout();
@@ -31,18 +36,19 @@ const Navbar: React.FC = () => {
     // Only proceed if there's a debounced search query different from URL
     const currentParams = new URLSearchParams(location.search);
     const currentSearchParam = currentParams.get('search') || '';
+    setSearchQuery(currentSearchParam);
 
-    if (debouncedSearchQuery.trim() && debouncedSearchQuery !== currentSearchParam) {
+    if (searchQuery.trim() && searchQuery !== currentSearchParam) {
       // If we're already on the courses listing page (not a specific course), update the URL without navigation
       if (location.pathname === '/courses') {
         const params = new URLSearchParams(location.search);
-        params.set('search', debouncedSearchQuery);
+        params.set('search', searchQuery);
         navigate(`/courses?${params.toString()}`, { replace: true });
       } else if (!location.pathname.startsWith('/courses/')) {
         // Only navigate to courses page with search if we're not on a course detail page
-        navigate(`/courses?search=${encodeURIComponent(debouncedSearchQuery)}`);
+        navigate(`/courses?search=${encodeURIComponent(searchQuery)}`);
       }
-    } else if (!debouncedSearchQuery.trim() && currentSearchParam) {
+    } else if (!searchQuery.trim() && currentSearchParam) {
       // Clear search parameter if search is empty but URL has search (only on courses listing page)
       if (location.pathname === '/courses') {
         const params = new URLSearchParams(location.search);
@@ -51,11 +57,7 @@ const Navbar: React.FC = () => {
         navigate(newUrl, { replace: true });
       }
     }
-  }, [debouncedSearchQuery, location.pathname, location.search, navigate]);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  };
+  }, [location.pathname, location.search, navigate]);
 
   return (
     <header className="bg-white border-b border-gray-200">
@@ -80,7 +82,14 @@ const Navbar: React.FC = () => {
               className="block w-full pl-10 pr-3 py-2 bg-gray-100 border-transparent rounded-lg focus:ring-blue-500 focus:border-blue-500 focus:bg-white"
               placeholder="Search courses..."
               value={searchQuery}
-              onChange={handleSearchChange}
+              onChange={(e) => {
+                if (e.target.value.length > 0) {
+                  setSearchQuery(e.target.value);
+                  debouncedSearch(e);
+                } else {
+                  navigate(`/courses`);
+                }
+              }}
             />
           </div>
         </div>
