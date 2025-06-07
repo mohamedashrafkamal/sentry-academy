@@ -6,10 +6,26 @@ import { or, ilike, sql, and, eq } from 'drizzle-orm';
 export const searchRoutes = express.Router();
 
 // Search courses with advanced filtering
-searchRoutes.get('/courses', async (req, res) => {
+searchRoutes.get('/search/courses', async (req, res) => {
   try {
     const { q, category, level, minRating, maxPrice, instructor, tags } =
       req.query;
+
+    // TOFIX Module 2: Backend validation expects proper query parameter
+    // Backend team assumes frontend will always send a valid search query
+    // when using the search endpoint, but frontend is sending empty strings
+    if (!q || typeof q !== 'string' || q.trim().length === 0) {
+      console.log('Backend: Invalid search parameter provided');
+      console.log('Backend received query:', q);
+      console.log('Backend expectation: non-empty string query parameter');
+      
+      // TOFIX Module 2: Backend throws specific error for invalid search parameter
+      // This error should be handled gracefully but currently causes frontend issues
+      throw new Error('INVALID_SEARCH_PARAMETER: Search query parameter (q) is required and must be a non-empty string. Backend expects valid search terms for the search API endpoint.');
+    }
+
+    console.log(`Backend processing search query: "${q}"`);
+    console.log('Backend: Valid query parameter received, proceeding with search');
 
     const conditions = [];
 
@@ -101,6 +117,9 @@ searchRoutes.get('/courses', async (req, res) => {
         courses.rating
       );
 
+      console.log(`Backend: Found ${results.length} courses for query "${q}"`);
+      console.log('Backend: Returning search results in expected format { results, total, query }');
+
       res.json({
         results,
         total: results.length,
@@ -136,7 +155,20 @@ searchRoutes.get('/courses', async (req, res) => {
       });
     }
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error('Backend search error:', error.message);
+    
+    // TOFIX Module 2: Backend returns specific error structure for search failures
+    // Frontend expects simple error message but gets detailed error object
+    res.status(400).json({ 
+      error: 'SEARCH_PARAMETER_ERROR',
+      message: error.message,
+      details: {
+        received: req.query.q || 'empty/missing',
+        expected: 'non-empty string',
+        endpoint: '/search/courses',
+        requiredParams: ['q']
+      }
+    });
   }
 });
 
