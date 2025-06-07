@@ -21,7 +21,7 @@ export interface SSORequest {
     provider: string;
     timestamp: string;
   };
-  jwtToken?: string;
+  loginSignature?: string;
 }
 
 export interface AuthError {

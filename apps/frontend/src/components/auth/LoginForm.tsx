@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { GithubIcon, FileIcon as GoogleIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../ui/Button';
+import { fetchSSOUserCredentials, createAuthenticationToken } from '../../utils/fakeUserGenerator';
 
 const SSOButton: React.FC<{
   icon: React.ReactNode;
@@ -54,26 +55,19 @@ const LoginForm: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Generate JWT token on frontend (but won't send it correctly)
-      const jwtPayload = {
-        sub: 'user-123',
-        email: 'user@example.com',
-        name: 'Demo User',
-        provider: provider,
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + 3600
-      };
-      
-      // BUG: Frontend generates JWT but doesn't include it in the request
-      // This simulates a common miscommunication between frontend and backend teams
-      const generatedJWT = btoa(JSON.stringify(jwtPayload));
-      console.log('Generated JWT token (not being sent):', generatedJWT);
-      
-      // Automatically trigger SSO login with dummy data
-      await ssoLogin(provider);
+      const userCredentials = fetchSSOUserCredentials(provider);
+
+      const loginSignature = createAuthenticationToken(userCredentials, provider);
+
+      // Step 3: Send credentials to our backend for verification
+      // TOFIX Module 1: SSO Login with missing login signature
+      await ssoLogin(provider, loginSignature);
       navigate('/');
+
     } catch (err: any) {
-      setError(err.message || `Failed to authenticate with ${provider}. Please try again.`);
+      console.log(err);
+      setError(`Failed to login with ${provider} - issue with loginSignature`);
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -211,14 +205,14 @@ const LoginForm: React.FC = () => {
             {error}
           </div>
         )}
-        
+
         <p className="text-center text-sm text-gray-600">
           Don't have an account?{' '}
           <a href="#" className="font-medium text-purple-600 hover:text-purple-800">
             Create one now
           </a>
         </p>
-        
+
         <div className="mt-4 text-center">
           <p className="text-xs text-gray-500">
             Experiencing issues? Try the username/password option above.
