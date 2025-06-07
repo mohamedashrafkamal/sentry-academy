@@ -95,7 +95,11 @@ export const api = {
 
   // Search
   search: {
-    courses: (query: string) => fetchApi<any[]>(`/search/courses?q=${encodeURIComponent(query)}`),
+    // TOFIX Module 2: Frontend sends 'query' parameter but backend API expects 'q'
+    // Backend documented API: GET /search/courses?q=searchTerm
+    // Frontend mistakenly sends: GET /search/courses?query=searchTerm
+    // Fix: Change 'query' to 'q' to match backend API contract
+    courses: (query: string) => fetchApi<any[]>(`/search/courses?query=${encodeURIComponent(query)}`),
   },
 };
 

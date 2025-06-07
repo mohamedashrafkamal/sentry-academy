@@ -8,51 +8,48 @@ import { useApi } from '../hooks/useApi';
 const CoursesPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
-
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // Fetch all courses
-  const getAllCourses = useCallback(() => api.courses.getAll(), []);
-  const { data: courses, loading, error } = useApi(getAllCourses);
+  // API call - will fail when searching due to parameter mismatch
+  const getCourses = useCallback(() => {
+    if (searchQuery) {
+      console.log(`Frontend: Searching for "${searchQuery}"`);
+      // This will fail because frontend sends 'query' but backend expects 'q'
+      return api.search.courses(searchQuery);
+    } else {
+      console.log('Frontend: Loading all courses');
+      return api.courses.getAll();
+    }
+  }, [searchQuery]);
 
-  // Fetch categories
+  const { data: coursesData, loading, error } = useApi(getCourses);
   const getCategories = useCallback(() => api.courses.getCategories(), []);
   const { data: categoriesData } = useApi(getCategories);
 
   const categories = categoriesData?.map(cat => cat.name) || [];
 
-  // Filter courses based on search and category
-  const filteredCourses = React.useMemo(() => {
-    if (!courses) return [];
+  // Process courses data
+  const processedCourses = React.useMemo(() => {
+    if (!coursesData) return [];
 
-    let result = [...courses];
-
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        course =>
-          course.title.toLowerCase().includes(query) ||
-          course.description.toLowerCase().includes(query) ||
-          course.tags?.some((tag: string) => tag.toLowerCase().includes(query))
-      );
-      
+    let courses = searchQuery ? (coursesData as any).results || [] : coursesData;
+    
+    // Filter by category if selected
+    if (selectedCategory && courses) {
+      courses = courses.filter((course: any) => course.category === selectedCategory);
     }
 
-    // Filter by category
-    if (selectedCategory) {
-      result = result.filter(course => course.category === selectedCategory);
-    }
-
-    return result;
-  }, [courses, searchQuery, selectedCategory]);
+    return courses || [];
+  }, [coursesData, searchQuery, selectedCategory]);
 
   if (loading) {
     return (
       <div className="container mx-auto max-w-7xl">
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading courses...</p>
+          <p className="mt-4 text-gray-600">
+            {searchQuery ? `Searching for "${searchQuery}"...` : 'Loading courses...'}
+          </p>
         </div>
       </div>
     );
@@ -62,7 +59,17 @@ const CoursesPage: React.FC = () => {
     return (
       <div className="container mx-auto max-w-7xl">
         <div className="text-center py-12">
-          <p className="text-red-600">Failed to load courses. Please try again later.</p>
+          <p className="text-red-600">
+            {searchQuery 
+              ? `Search failed: ${error.message}`
+              : 'Failed to load courses. Please try again later.'
+            }
+          </p>
+          {searchQuery && (
+            <p className="text-sm text-gray-600 mt-2">
+              Try searching for a different term or browse all courses instead.
+            </p>
+          )}
         </div>
       </div>
     );
@@ -71,9 +78,14 @@ const CoursesPage: React.FC = () => {
   return (
     <div className="container mx-auto max-w-7xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">All Courses</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          {searchQuery ? `Search Results` : 'All Courses'}
+        </h1>
         <p className="text-gray-600">
-          Browse our collection of expert-led courses on observability and software development
+          {searchQuery 
+            ? `Results for "${searchQuery}"` 
+            : 'Browse our collection of expert-led courses'
+          }
         </p>
       </div>
 
@@ -86,12 +98,12 @@ const CoursesPage: React.FC = () => {
       {searchQuery && (
         <div className="mb-6">
           <p className="text-gray-600">
-            {filteredCourses.length} {filteredCourses.length === 1 ? 'result' : 'results'} for "{searchQuery}"
+            {processedCourses.length} {processedCourses.length === 1 ? 'result' : 'results'} for "{searchQuery}"
           </p>
         </div>
       )}
 
-      <CourseGrid courses={filteredCourses} />
+      <CourseGrid courses={processedCourses} />
     </div>
   );
 };
