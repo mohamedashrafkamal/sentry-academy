@@ -3,7 +3,6 @@ import { db } from '../../../db';
 import { users } from '../../../db/schema';
 import { eq } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
-import * as Sentry from '@sentry/node';
 
 export const authRoutes = express.Router();
 
@@ -61,7 +60,7 @@ authRoutes.post('/login', async (req, res) => {
     const { email, password } = req.body;
     
     // BUG: Missing validation - this will cause errors if email/password not provided
-    Sentry.logger.info(`Login attempt for email: ${email}`);
+    console.log(`Login attempt for email: ${email}`);
     
     // Simulate authentication delay
     await new Promise(resolve => setTimeout(resolve, 800));
@@ -70,7 +69,7 @@ authRoutes.post('/login', async (req, res) => {
     const userProfile = mockUserProfiles[email?.toLowerCase()];
     
     if (!userProfile) {
-      Sentry.captureMessage(`Login failed - user not found: ${email}`, 'warning');
+      console.warn(`Login failed - user not found: ${email}`);
       return res.status(401).json({
         error: 'AUTHENTICATION_FAILED',
         message: 'Invalid credentials',
@@ -103,12 +102,12 @@ authRoutes.post('/login', async (req, res) => {
         expiresIn: '24h'
       };
       
-      Sentry.captureMessage(`Successful login for ${email}`, 'info');
+      console.log(`Successful login for ${email}`);
       res.json(responseData);
       
     } catch (dataError) {
       // BUG: Backend data processing error - return partial response that will cause frontend issues
-      Sentry.captureException(dataError);
+      console.error('Data processing error:', dataError);
       
       // Return incomplete user data that will cause frontend errors
       res.json({
@@ -127,7 +126,6 @@ authRoutes.post('/login', async (req, res) => {
     }
     
   } catch (error: any) {
-    Sentry.captureException(error);
     console.error('Login error:', error);
     
     // BUG: Generic error response that doesn't help with debugging
@@ -145,7 +143,7 @@ authRoutes.post('/sso/:provider', async (req, res) => {
     const { provider } = req.params;
     const { code, state } = req.body; // OAuth callback parameters
     
-    Sentry.logger.info(`SSO login attempt with ${provider}`);
+    console.log(`SSO login attempt with ${provider}`);
     
     // Simulate OAuth provider response delay
     await new Promise(resolve => setTimeout(resolve, 1200));
@@ -229,12 +227,12 @@ authRoutes.post('/sso/:provider', async (req, res) => {
         expiresIn: '24h'
       };
       
-      Sentry.captureMessage(`Successful SSO login with ${provider}`, 'info');
+      console.log(`Successful SSO login with ${provider}`);
       res.json(responseData);
       
     } catch (dataError) {
       // BUG: Send partial response that will cause frontend issues
-      Sentry.captureException(dataError);
+      console.error('SSO data processing error:', dataError);
       
       res.json({
         user: {
@@ -252,7 +250,6 @@ authRoutes.post('/sso/:provider', async (req, res) => {
     }
     
   } catch (error: any) {
-    Sentry.captureException(error);
     console.error('SSO login error:', error);
     
     res.status(500).json({
@@ -269,14 +266,14 @@ authRoutes.post('/logout', async (req, res) => {
     const { token } = req.body;
     
     // In a real app, would invalidate the token
-    Sentry.logger.info('User logout');
+    console.log('User logout');
     
     res.json({
       success: true,
       message: 'Successfully logged out'
     });
   } catch (error: any) {
-    Sentry.captureException(error);
+    console.error('Logout error:', error);
     res.status(500).json({
       error: 'LOGOUT_FAILED',
       message: 'Failed to logout'

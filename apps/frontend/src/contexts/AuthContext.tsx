@@ -1,7 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { authService } from '../services/authService';
-import * as Sentry from '@sentry/react';
 
 interface AuthContextType {
   user: User | null;
@@ -31,7 +30,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAuthenticated(true);
       } catch (error) {
         console.error('Failed to parse stored user', error);
-        Sentry.captureException(error);
         localStorage.removeItem('user');
         localStorage.removeItem('authToken');
       }
@@ -45,14 +43,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Call the real backend authentication endpoint
       const response = await authService.login({ email, password });
       
-      Sentry.addBreadcrumb({
-        message: 'Login response received',
-        category: 'auth',
-        level: 'info',
-        data: { 
-          hasUser: !!response.user,
-          hasWarnings: !!response.warnings
-        }
+      console.log('Login response received:', { 
+        hasUser: !!response.user,
+        hasWarnings: !!response.warnings
       });
 
       // BUG: Frontend assumes backend always returns complete user data
@@ -94,13 +87,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('user', JSON.stringify(userProfile));
         localStorage.setItem('authToken', response.token);
         
-        Sentry.captureMessage('Login successful', 'info');
+        console.log('Login successful');
 
       } catch (dataProcessingError) {
         // BUG: Frontend data processing failed due to backend missing properties
         // This creates a realistic scenario where backend issues cause frontend errors
-        Sentry.captureException(dataProcessingError);
-        
         console.error('Failed to process user profile data:', dataProcessingError);
         
         // Create a minimal user profile with safe defaults, but still try to access some missing properties
@@ -130,7 +121,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
     } catch (error: any) {
-      Sentry.captureException(error);
       console.error('Login failed:', error);
       
       // Clear any partial state
@@ -154,11 +144,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         state: 'mock-state'
       });
 
-      Sentry.addBreadcrumb({
-        message: `SSO login response received for ${provider}`,
-        category: 'auth',
-        level: 'info',
-        data: { provider, hasUser: !!response.user }
+      console.log(`SSO login response received for ${provider}:`, { 
+        provider, 
+        hasUser: !!response.user 
       });
 
       // BUG: Frontend assumes SSO responses have consistent structure across providers
@@ -205,12 +193,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('user', JSON.stringify(ssoUserProfile));
         localStorage.setItem('authToken', response.token);
         
-        Sentry.captureMessage(`SSO login successful with ${provider}`, 'info');
+        console.log(`SSO login successful with ${provider}`);
 
       } catch (ssoDataError) {
         // BUG: SSO data processing failed due to backend inconsistencies
-        Sentry.captureException(ssoDataError);
-        
         console.error(`Failed to process ${provider} SSO data:`, ssoDataError);
         
         // Create fallback SSO profile but still attempt to access some missing properties
@@ -237,7 +223,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
     } catch (error: any) {
-      Sentry.captureException(error);
       console.error(`SSO login failed for ${provider}:`, error);
       
       // Clear any partial state
@@ -261,13 +246,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       // Don't block logout on API error
       console.warn('Logout API call failed:', error);
-      Sentry.captureException(error);
     } finally {
       setUser(null);
       setIsAuthenticated(false);
       localStorage.removeItem('user');
       localStorage.removeItem('authToken');
-      Sentry.captureMessage('User logged out', 'info');
+      console.log('User logged out');
     }
   };
 
