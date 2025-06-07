@@ -30,7 +30,6 @@ app.use(express.json());
 // Request logging middleware
 app.use(
   (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    Sentry.logger.info('Request received');
     const logMessage = `🌐 ${req.method} ${req.url}`;
     console.log(logMessage);
     process.stdout.write(logMessage + '\n');
@@ -49,7 +48,7 @@ app.get('/favicon.ico', (req: express.Request, res: express.Response) => {
 });
 
 // API routes
-Sentry.logger.info('🔧 Setting up API routes...');
+console.log('🔧 Setting up API routes...');
 app.use('/api', courseRoutes);
 app.use('/api', lessonRoutes);
 app.use('/api', userRoutes);

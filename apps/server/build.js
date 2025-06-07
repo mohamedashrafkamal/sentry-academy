@@ -2,6 +2,7 @@ import 'dotenv/config';
 import esbuild from 'esbuild';
 import { sentryEsbuildPlugin } from '@sentry/esbuild-plugin';
 
+
 esbuild.build({
   entryPoints: ['index.ts'],
   sourcemap: true,

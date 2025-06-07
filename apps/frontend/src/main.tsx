@@ -1,43 +1,18 @@
-import React, { StrictMode } from 'react';
+import './instrument.js';
 import { createRoot } from 'react-dom/client';
-import {
-  useLocation,
-  useNavigationType,
-  createRoutesFromChildren,
-  matchRoutes,
-} from 'react-router-dom';
+import * as Sentry from '@sentry/react';
 import App from './App.tsx';
 import './index.css';
 
-import * as Sentry from '@sentry/react';
-
-Sentry.init({
-  dsn: import.meta.env.VITE_SENTRY_DSN,
-
-  _experiments: {
-    enableLogs: true,
-  },
-
-  integrations: [
-    Sentry.reactRouterV7BrowserTracingIntegration({
-      useEffect: React.useEffect,
-      useLocation,
-      useNavigationType,
-      createRoutesFromChildren,
-      matchRoutes,
-    }),
-    Sentry.replayIntegration(),
-  ],
-
-  debug: false,
-
-  tracesSampleRate: 1.0,
-  tracePropagationTargets: ['localhost:3001'],
-
-	replaysSessionSampleRate: 1.0,
-	replaysOnErrorSampleRate: 1.0,
-});
-
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById('root')!, {
+  // Callback called when an error is thrown and not caught by an ErrorBoundary.
+  onUncaughtError: Sentry.reactErrorHandler((error, errorInfo) => {
+    console.warn('Uncaught error', error, errorInfo.componentStack);
+  }),
+  // Callback called when React catches an error in an ErrorBoundary.
+  onCaughtError: Sentry.reactErrorHandler(),
+  // Callback called when React automatically recovers from errors.
+  onRecoverableError: Sentry.reactErrorHandler(),
+}).render(
     <App />
 );
