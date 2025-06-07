@@ -1,350 +1,195 @@
-# Sentry Academy Workshop: Debugging Login Issues
-
-## Overview
-This workshop demonstrates common frontend bugs that occur when making assumptions about data structure, particularly in authentication flows. You'll learn to identify and fix these issues that commonly appear in production applications.
-
-## Problem Description
-The application has been experiencing login failures for both regular email/password authentication and SSO (Google/GitHub) authentication. Users are reporting they cannot log in, and the errors appear to be related to missing or incorrectly structured user data.
-
-## Workshop Structure
-1. **Reproduce the Issues**
-2. **Identify the Root Causes**
-3. **Implement Fixes**
-4. **Verify Solutions**
-5. **Best Practices**
-
----
-
-## Part 1: Reproducing the Issues
-
-### Step 1: Try Regular Login
-1. Navigate to the login page
-2. Enter any email and password
-3. Click "Sign in"
-4. **Expected Result**: Login should fail with error: "Login failed: Unable to load user profile data"
-
-### Step 2: Try SSO Login
-1. Navigate to the login page
-2. Click "Continue with Google" or "Continue with Github"
-3. **Expected Result**: Login should fail with error: "Google login failed: Unable to process social profile data"
-
----
-
-## Part 2: Identifying the Root Causes
-
-### What to Look For:
-- **Property Access Errors**: `Cannot read property 'X' of undefined`
-- **Assumptions About Data Structure**: Code that assumes nested objects exist
-- **Missing Null/Undefined Checks**: Direct property access without validation
-- **Type Coercion Issues**: Using `as any` to bypass TypeScript safety
-
-### Step 3: Examine the AuthContext Code
-
-Open `apps/frontend/src/contexts/AuthContext.tsx` and locate the `login` function:
-
-```typescript
-// BUG: Assume user always has metadata object with required fields
-const userMetadata = (loggedInUser as any).metadata;
-const lastLogin = userMetadata.lastLogin; // This will throw: Cannot read property 'lastLogin' of undefined
-
-// BUG: Assume user always has settings with nested email config
-const emailSettings = (loggedInUser as any).settings.email;
-const notificationEnabled = emailSettings.notifications; // This will throw: Cannot read property 'email' of undefined
-```
-
-### Step 4: Examine the SSO Login Code
-
-In the same file, locate the `ssoLogin` function:
-
-```typescript
-// This will throw "Cannot read property 'avatar' of undefined"
-socialProfile: {
-  profileImage: (loggedInUser as any).social[provider].avatar,
-  verified: (loggedInUser as any).social[provider].verified,
-  // This will throw "Cannot read property 'scopes' of undefined"
-  permissions: (loggedInUser as any).oauth.scopes[provider].permissions
-},
-// This will throw "Cannot read property 'map' of undefined"
-linkedAccounts: (loggedInUser as any).accounts.linked.map((account: any) => ({
-  provider: account.provider,
-  externalId: account.id
-}))
-```
-
-### Step 5: Check the User Data Structure
-
-Look at `apps/frontend/src/types/index.ts` to see what the User type actually contains:
-
-```typescript
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar: string;
-  role: 'student' | 'instructor' | 'admin';
-}
-```
-
-**Key Insight**: The User type doesn't include `metadata`, `settings`, `social`, `oauth`, or `accounts` properties that the code is trying to access!
-
----
-
-## Part 3: Implementing the Fixes
-
-### Fix 1: Safe Property Access for Regular Login
-
-Replace the problematic code in the `login` function:
-
-```typescript
-// BEFORE (Broken):
-const userMetadata = (loggedInUser as any).metadata;
-const lastLogin = userMetadata.lastLogin;
-const emailSettings = (loggedInUser as any).settings.email;
-const notificationEnabled = emailSettings.notifications;
-
-// AFTER (Fixed):
-const userProfile = {
-  ...loggedInUser,
-  // Use optional chaining and provide sensible defaults
-  theme: 'light', // Simple default instead of accessing non-existent preferences
-  lastLoginDate: new Date().toISOString(), // Provide current date as fallback
-  settings: {
-    notifications: true, // Provide sensible default
-    privacy: 'standard' // Provide sensible default
-  }
-};
-```
-
-### Fix 2: Safe Property Access for SSO Login
-
-Replace the problematic code in the `ssoLogin` function:
-
-```typescript
-// BEFORE (Broken):
-socialProfile: {
-  profileImage: (loggedInUser as any).social[provider].avatar,
-  verified: (loggedInUser as any).social[provider].verified,
-  permissions: (loggedInUser as any).oauth.scopes[provider].permissions
-},
-linkedAccounts: (loggedInUser as any).accounts.linked.map((account: any) => ({
-  provider: account.provider,
-  externalId: account.id
-}))
-
-// AFTER (Fixed):
-const ssoUserProfile = {
-  ...loggedInUser,
-  provider: provider,
-  // Provide safe defaults for social profile data
-  socialProfile: {
-    profileImage: loggedInUser.avatar, // Use existing avatar
-    verified: false, // Conservative default
-    permissions: [] // Empty array as safe default
-  },
-  // Provide empty array instead of trying to map undefined
-  linkedAccounts: []
-};
-```
-
-### Fix 3: Remove Unnecessary Try-Catch Blocks
-
-Since we're now using safe defaults, we can remove the try-catch blocks:
-
-```typescript
-// BEFORE (with try-catch):
-try {
-  const userProfile = {
-    // ... problematic code
-  };
-  setUser(userProfile);
-  setIsAuthenticated(true);
-  localStorage.setItem('user', JSON.stringify(userProfile));
-} catch (profileError) {
-  throw new Error('Login failed: Unable to load user profile data');
-}
-
-// AFTER (clean code):
-const userProfile = {
-  // ... safe code with defaults
-};
-setUser(userProfile);
-setIsAuthenticated(true);
-localStorage.setItem('user', JSON.stringify(userProfile));
-```
-
-### Fix 4: Update UI Components to Handle Missing Data
-
-In `apps/frontend/src/components/layout/Navbar.tsx`, fix the profile display:
-
-```typescript
-// BEFORE (Broken):
-{(user as any)?.settings?.notifications && (
-  <span className="ml-1 text-xs text-green-500">●</span>
-)}
-
-// Display metadata that doesn't exist
-Last login: {(user as any)?.lastLoginDate || 'Unknown'}
-
-// AFTER (Fixed):
-{user?.settings?.notifications && (
-  <span className="ml-1 text-xs text-green-500">●</span>
-)}
-
-// Show actual data or sensible fallback
-Last login: {user?.lastLoginDate ? new Date(user.lastLoginDate).toLocaleDateString() : 'Recently'}
-```
-
----
-
-## Part 4: Complete Fixed Code
-
-### Updated AuthContext.tsx
-
-```typescript
-const login = async (email: string, password: string): Promise<void> => {
-  setIsLoading(true);
-  try {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    const loggedInUser = getUserById('1');
-
-    if (loggedInUser) {
-      // Create user profile with safe defaults
-      const userProfile = {
-        ...loggedInUser,
-        theme: 'light',
-        lastLoginDate: new Date().toISOString(),
-        settings: {
-          notifications: true,
-          privacy: 'standard'
-        }
-      };
-
-      setUser(userProfile);
-      setIsAuthenticated(true);
-      localStorage.setItem('user', JSON.stringify(userProfile));
-    } else {
-      throw new Error('Invalid credentials');
-    }
-  } catch (error) {
-    console.error('Login failed', error);
-    throw error;
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-const ssoLogin = async (provider: string): Promise<void> => {
-  setIsLoading(true);
-  try {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    const loggedInUser = getUserById('1');
-
-    if (loggedInUser) {
-      const ssoUserProfile = {
-        ...loggedInUser,
-        provider: provider,
-        socialProfile: {
-          profileImage: loggedInUser.avatar,
-          verified: false,
-          permissions: []
-        },
-        linkedAccounts: []
-      };
-
-      setUser(ssoUserProfile);
-      setIsAuthenticated(true);
-      localStorage.setItem('user', JSON.stringify(ssoUserProfile));
-    } else {
-      throw new Error('SSO authentication failed');
-    }
-  } catch (error) {
-    console.error('SSO login failed', error);
-    throw error;
-  } finally {
-    setIsLoading(false);
-  }
-};
-```
-
----
-
-## Part 5: Testing the Fixes
-
-### Step 6: Test Regular Login
-1. Try logging in with email/password
-2. **Expected Result**: Login should now succeed
-3. Check the profile dropdown - should show "Recently" for last login
-
-### Step 7: Test SSO Login
-1. Try logging in with Google/GitHub
-2. **Expected Result**: Login should now succeed  
-3. Verify the user profile works correctly
-
-### Step 8: Verify UI Components
-1. Click on the profile dropdown
-2. Check that all information displays correctly
-3. Ensure no "undefined" values are shown
-
----
-
-## Part 6: Best Practices & Prevention
-
-### Key Takeaways:
-
-1. **Never Assume Data Structure**
-   - Always check if nested objects exist before accessing properties
-   - Use optional chaining (`?.`) when available
-
-2. **Provide Sensible Defaults**
-   - Instead of letting properties be `undefined`, provide meaningful defaults
-   - Consider what the user experience should be with missing data
-
-3. **Avoid Type Coercion**
-   - Don't use `as any` to bypass TypeScript safety
-   - If you must, add proper runtime checks
-
-4. **Handle Missing Data Gracefully**
-   - UI should never show "undefined" to users
-   - Provide fallback values or hide elements when data is missing
-
-5. **Test Different Auth Flows**
-   - Different authentication methods might return different data structures
-   - Ensure consistent handling across all auth methods
-
-### Code Patterns to Avoid:
-
-```typescript
-// BAD: Direct property access without checks
-const value = user.settings.notifications;
-
-// BAD: Using 'as any' without validation
-const value = (user as any).settings.notifications;
-
-// GOOD: Optional chaining with defaults
-const value = user?.settings?.notifications ?? true;
-
-// GOOD: Explicit checks
-const value = user && user.settings && user.settings.notifications;
-```
-
-### Testing Checklist:
-
-- [ ] Regular login works
-- [ ] SSO login works  
-- [ ] Profile dropdown displays correctly
-- [ ] No "undefined" values in UI
-- [ ] Error messages are user-friendly
-- [ ] Console shows no errors
-
----
-
-## Conclusion
-
-This workshop demonstrated how assumptions about data structure can cause critical failures in authentication flows. The key lessons are:
-
-1. **Validate data structure assumptions** before accessing nested properties
-2. **Provide meaningful defaults** instead of allowing undefined values
-3. **Test all authentication flows** to ensure consistent behavior
-4. **Use TypeScript properly** instead of bypassing it with `as any`
-
-These patterns apply to any application where you're working with dynamic data from APIs, user inputs, or external services. 
+# Sentry Academy Workshop: Debugging JWT Authentication Failures
+
+## Workshop Overview
+
+This workshop demonstrates a realistic scenario where JWT token authentication fails between frontend and backend teams due to miscommunication about API contracts. Both applications have Sentry monitoring that will automatically capture the errors for debugging.
+
+## The Scenario
+
+Your company is implementing SSO (Single Sign-On) authentication. The frontend team believes they need to generate and send JWT tokens to authenticate SSO requests, while the backend team expects to receive these tokens but the frontend isn't actually sending them properly.
+
+**Frontend Team's Understanding:**
+- Generate JWT tokens for SSO authentication
+- Send user data along with the token
+- Handle successful authentication responses
+
+**Backend Team's Implementation:**
+- Expect JWT tokens in SSO requests
+- Validate token format and claims
+- Return specific error codes when tokens are missing
+
+**The Problem:**
+- Frontend generates tokens but doesn't send them initially
+- Backend fails with "JWT_TOKEN_REQUIRED" error
+- Both sides have different assumptions about the API contract
+
+## Getting Started
+
+1. Start the application:
+   ```bash
+   pnpm dev
+   ```
+
+2. Open your browser to `http://localhost:5173`
+
+3. You should see the login form with SSO options prominently displayed
+
+## Step 1: Experience the Authentication Error
+
+1. **Try SSO Login:**
+   - Click on any SSO provider button (Google, Microsoft, Okta)
+   - Check the browser console - you'll see the frontend generates a JWT token
+   - Notice the authentication fails with a backend error
+
+2. **Observe the Error:**
+   - The backend returns: `"JWT token is required for SSO authentication"`
+   - This creates an unhandled error that Sentry will automatically capture
+
+## Step 2: Debug Using Backend API
+
+Let's test the backend API directly to understand what it expects:
+
+1. **Test SSO endpoint without JWT token:**
+   ```bash
+   curl -X POST http://localhost:3000/auth/sso/google \
+     -H "Content-Type: application/json" \
+     -d '{
+       "userData": {
+         "email": "test@example.com",
+         "name": "Test User",
+         "provider": "google"
+       },
+       "code": "mock-code"
+     }'
+   ```
+
+   **Expected Response:**
+   ```json
+   {
+     "error": "JWT_TOKEN_REQUIRED",
+     "message": "JWT token is required for SSO authentication",
+     "details": {
+       "received": "userData and code only",
+       "expected": "userData, code, AND jwtToken"
+     }
+   }
+   ```
+
+2. **Test SSO endpoint with JWT token:**
+   ```bash
+   curl -X POST http://localhost:3000/auth/sso/google \
+     -H "Content-Type: application/json" \
+     -d '{
+       "userData": {
+         "email": "test@example.com",
+         "name": "Test User",
+         "provider": "google"
+       },
+       "code": "mock-code",
+       "jwtToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0In0.mock"
+     }'
+   ```
+
+   **Expected Response:**
+   ```json
+   {
+     "user": {
+       "id": "user_12345",
+       "email": "test@example.com",
+       "name": "Test User"
+     },
+     "token": "auth_token_67890"
+   }
+   ```
+
+## Step 3: Analyze Frontend JWT Token Generation
+
+1. **Check the browser console** when trying SSO login
+2. You'll see the frontend generates a proper JWT token:
+   ```
+   Frontend generated JWT token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+   JWT payload: {
+     "sub": "google_user_123",
+     "email": "demo.user.google@example.com",
+     "name": "Demo Google User",
+     "provider": "google",
+     "iat": 1640995200,
+     "exp": 1640998800
+   }
+   ```
+
+3. **The Problem:** Look at the `LoginForm.tsx` code:
+   ```typescript
+   // BUG: Comment out the token to simulate the miscommunication
+   // await ssoLogin(provider, mockJwtToken); // This is what SHOULD happen
+   
+   // BUG: But instead, frontend doesn't send the token
+   await ssoLogin(provider); // Missing JWT token - backend will fail
+   ```
+
+## Step 4: Monitor Errors in Sentry
+
+Sentry is already configured for both frontend and backend applications. When authentication failures occur, Sentry will automatically capture these errors.
+
+**Frontend Errors Captured:**
+- Property access errors on missing/malformed user data
+- SSO authentication failures
+- JWT token validation errors
+
+**Backend Errors Captured:**
+- Missing JWT token validation failures
+- Invalid request format errors
+- Authentication processing errors
+
+**To view errors in Sentry:**
+1. Errors are automatically captured when they occur
+2. Check your Sentry dashboard for the project
+3. Look for errors related to authentication and JWT tokens
+
+## Step 5: Fix the JWT Token Issue
+
+**Option A: Fix Frontend (Recommended for learning):**
+
+1. In `apps/frontend/src/components/LoginForm.tsx`, uncomment the line that sends the JWT token:
+   ```typescript
+   // Change this:
+   await ssoLogin(provider); // Missing JWT token
+   
+   // To this:
+   await ssoLogin(provider, mockJwtToken); // Send the token
+   ```
+
+2. Test the SSO login again - it should work!
+
+**Option B: Update Backend to be more forgiving:**
+
+1. Modify the backend to accept SSO requests without JWT tokens
+2. This would involve changing the validation logic in `apps/server/src/modules/auth/routes.ts`
+
+## Step 6: Additional Frontend Data Processing Errors
+
+If you check the email/password login (by checking the checkbox and submitting the form), you'll encounter additional errors where the frontend assumes the backend returns complete user data but encounters missing properties.
+
+These errors demonstrate:
+- Property access on undefined objects
+- Inconsistent API response structures
+- Missing nested data handling
+
+## Learning Outcomes
+
+By completing this workshop, you'll understand:
+
+1. **API Contract Mismatches:** How miscommunication between teams leads to authentication failures
+2. **JWT Token Flow:** Understanding how tokens should be passed between frontend and backend
+3. **Error Monitoring:** How Sentry automatically captures unhandled errors in both frontend and backend
+4. **Debugging Process:** Using browser tools, API testing, and error monitoring to identify issues
+5. **Real-world Scenarios:** Common authentication implementation problems in production applications
+
+## Extended Debugging Scenarios
+
+1. **Try different SSO providers** - Each generates different JWT payloads
+2. **Test with malformed JWT tokens** - Modify the token generation to create invalid tokens
+3. **Simulate network timeouts** - Add delays to see how timeouts are handled
+4. **Test concurrent logins** - Multiple rapid SSO attempts to see race conditions
+
+This workshop provides a realistic example of how authentication systems can fail in production and how monitoring tools like Sentry help identify and resolve these issues quickly. 

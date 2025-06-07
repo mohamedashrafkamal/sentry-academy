@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { User } from '../types';
-import { getUserById } from '../data/users';
+import { authService } from '../services/authService';
 
 interface AuthContextType {
   user: User | null;
@@ -8,7 +8,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  ssoLogin: (provider: string) => Promise<void>;
+  ssoLogin: (provider: string, loginSignature?: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,7 +21,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Check for stored authentication
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const storedToken = localStorage.getItem('authToken');
+    
+    if (storedUser && storedToken) {
       try {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
@@ -29,6 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error) {
         console.error('Failed to parse stored user', error);
         localStorage.removeItem('user');
+        localStorage.removeItem('authToken');
       }
     }
     setIsLoading(false);
@@ -37,101 +40,92 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
     try {
-      // This is a mock implementation
-      // In a real app, this would call an API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await authService.login({ email, password });
+      
+      setUser(response.user);
+      setIsAuthenticated(true);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      localStorage.setItem('authToken', response.token);
+      
+      console.log('Email/password login successful');
 
-      // Simulate a successful login with the first user
-      const loggedInUser = getUserById('1');
-
-      if (loggedInUser) {
-        // BUG: Poorly written code that assumes user object structure
-        // This simulates real-world scenarios where backend data changes
-        // or frontend makes assumptions about data structure
-        
-        // BUG: Assume user always has metadata object with required fields
-        const userMetadata = (loggedInUser as any).metadata;
-        const lastLogin = userMetadata.lastLogin; // This will throw: Cannot read property 'lastLogin' of undefined
-        
-        // BUG: Assume user always has settings with nested email config
-        const emailSettings = (loggedInUser as any).settings.email;
-        const notificationEnabled = emailSettings.notifications; // This will throw: Cannot read property 'email' of undefined
-
-        const userProfile = {
-          ...loggedInUser,
-          // This part works fine
-          theme: (loggedInUser as any).preferences?.theme || 'light',
-          // These will cause the failure
-          lastLoginDate: lastLogin,
-          settings: {
-            notifications: notificationEnabled,
-            privacy: (loggedInUser as any).settings.privacy.level
-          }
-        };
-
-        setUser(userProfile);
-        setIsAuthenticated(true);
-        localStorage.setItem('user', JSON.stringify(userProfile));
-      } else {
-        throw new Error('Invalid credentials');
-      }
-    } catch (error) {
-      console.error('Login failed', error);
+    } catch (error: any) {
+      console.error('Login failed:', error);
+      
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
+      
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const ssoLogin = async (provider: string): Promise<void> => {
+  const ssoLogin = async (provider: string, loginSignature?: string): Promise<void> => {
     setIsLoading(true);
+    
     try {
-      // This is a mock implementation
-      // In a real app, this would redirect to the SSO provider
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Basic mock data - real user data will come from the decoded loginSignature
+      const basicUserData = {
+        email: `demo.user.${provider}@example.com`,
+        name: `Demo ${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+        provider: provider,
+        timestamp: new Date().toISOString()
+      };
 
-      // Simulate a successful SSO login with the first user
-      const loggedInUser = getUserById('1');
+      console.log('Initiating SSO login');
+      console.log('Login signature provided:', !!loginSignature);
 
-      if (loggedInUser) {
-        // BUG: Different data structure assumptions for SSO vs regular login
-        // This simulates inconsistent data handling between auth methods
-        const ssoUserProfile = {
-          ...loggedInUser,
-          // SSO provider might return different data structure
-          provider: provider,
-          // This will throw "Cannot read property 'avatar' of undefined"
-          socialProfile: {
-            profileImage: (loggedInUser as any).social[provider].avatar,
-            verified: (loggedInUser as any).social[provider].verified,
-            // This will throw "Cannot read property 'scopes' of undefined"
-            permissions: (loggedInUser as any).oauth.scopes[provider].permissions
-          },
-          // This will throw "Cannot read property 'map' of undefined"
-          linkedAccounts: (loggedInUser as any).accounts.linked.map((account: any) => ({
-            provider: account.provider,
-            externalId: account.id
-          }))
-        };
+      // WORKSHOP SCENARIO: Call SSO endpoint - will fail if loginSignature is missing
+      const response = await authService.ssoLogin(provider, {
+        userData: basicUserData, // Fallback data, real data comes from loginSignature
+        loginSignature: loginSignature, // This is undefined when not provided by frontend
+        code: 'mock-oauth-code',
+        state: 'mock-state'
+      });
 
-        setUser(ssoUserProfile);
-        setIsAuthenticated(true);
-        localStorage.setItem('user', JSON.stringify(ssoUserProfile));
-      } else {
-        throw new Error('SSO authentication failed');
-      }
-    } catch (error) {
-      console.error('SSO login failed', error);
+      console.log('SSO response received:', response);
+
+      // If we get here, SSO login was successful
+      setUser(response.user);
+      setIsAuthenticated(true);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      localStorage.setItem('authToken', response.token);
+      
+      console.log(`SSO login successful with ${provider}`);
+
+    } catch (error: any) {
+      console.error(`SSO login failed for ${provider}:`, error);
+      
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
+      
+      // Re-throw to let the error bubble up for Sentry to catch
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem('user');
+  const logout = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        await authService.logout(token);
+      }
+    } catch (error) {
+      console.warn('Logout API call failed:', error);
+    } finally {
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
+      console.log('User logged out');
+    }
   };
 
   return (

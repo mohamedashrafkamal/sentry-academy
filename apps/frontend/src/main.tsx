@@ -29,7 +29,7 @@ Sentry.init({
     Sentry.replayIntegration(),
   ],
 
-  debug: true,
+  debug: false,
 
   tracesSampleRate: 1.0,
   tracePropagationTargets: ['localhost:3001'],
