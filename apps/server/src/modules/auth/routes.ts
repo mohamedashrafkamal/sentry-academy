@@ -137,19 +137,98 @@ authRoutes.post('/login', async (req, res) => {
   }
 });
 
-// SSO login endpoint - realistic OAuth simulation with missing data issues
+// SSO login endpoint - expects JWT token that frontend doesn't send
 authRoutes.post('/sso/:provider', async (req, res) => {
   try {
     const { provider } = req.params;
-    const { code, state } = req.body; // OAuth callback parameters
+    const { code, state, userData, jwtToken } = req.body;
     
     console.log(`SSO login attempt with ${provider}`);
+    console.log('Request body:', { 
+      hasCode: !!code, 
+      hasState: !!state, 
+      hasUserData: !!userData,
+      hasJwtToken: !!jwtToken  // This will be false
+    });
     
     // Simulate OAuth provider response delay
-    await new Promise(resolve => setTimeout(resolve, 1200));
+    await new Promise(resolve => setTimeout(resolve, 600));
     
-    // BUG: Hardcoded response - doesn't actually validate OAuth
-    if (!['google', 'github'].includes(provider!)) {
+    // BUG: Backend expects JWT token that frontend doesn't send
+    if (!jwtToken) {
+      console.error(`JWT token missing for ${provider} SSO authentication`);
+      return res.status(400).json({
+        error: 'JWT_TOKEN_REQUIRED',
+        message: 'JWT token is required for SSO authentication',
+        code: 'MISSING_JWT_TOKEN',
+        details: {
+          provider: provider,
+          expectedFields: ['jwtToken'],
+          receivedFields: Object.keys(req.body),
+          hint: 'Frontend must include a valid JWT token in the request body'
+        }
+      });
+    }
+    
+    // BUG: If somehow a JWT token is provided, try to validate it incorrectly
+    try {
+      // This would normally parse and validate the JWT
+      const jwtPayload = JSON.parse(atob(jwtToken));
+      
+      // BUG: Assume JWT has specific structure that might not exist
+      const userEmail = jwtPayload.email; // Might not exist
+      const userSub = jwtPayload.sub; // Might not exist  
+      const jwtProvider = jwtPayload.provider; // Might not exist
+      
+      // BUG: Strict validation that will fail
+      if (jwtProvider !== provider) {
+        throw new Error('Provider mismatch in JWT token');
+      }
+      
+      // BUG: Try to access nested claims that don't exist
+      const userRoles = jwtPayload.claims.roles; // Will fail - no 'claims' object
+      const permissions = jwtPayload.permissions.scopes; // Will fail - no 'permissions' object
+      
+    } catch (jwtError: any) {
+      console.error('JWT validation failed:', jwtError);
+      return res.status(401).json({
+        error: 'JWT_VALIDATION_FAILED', 
+        message: 'Invalid or malformed JWT token',
+        code: 'INVALID_JWT',
+        details: {
+          jwtError: jwtError.message,
+          provider: provider,
+          hint: 'Ensure JWT token is properly formatted and contains required claims'
+        }
+      });
+    }
+    
+    // This code should never be reached due to missing JWT token
+    console.log('JWT validation passed - proceeding with SSO authentication');
+    
+    // Mock SSO user data that would be returned on successful auth
+    const ssoUserData = {
+      google: {
+        id: '1',
+        email: userData?.email || 'google.user@example.com',
+        name: userData?.name || 'Google User',
+        avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg',
+        verified: true,
+        provider: 'google'
+      },
+      github: {
+        id: '1', 
+        email: userData?.email || 'github.user@example.com',
+        name: userData?.name || 'GitHub User',
+        avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg',
+        verified: true,
+        provider: 'github'
+      }
+    };
+    
+    const authenticatedUser = ssoUserData[provider as keyof typeof ssoUserData];
+    
+    if (!authenticatedUser) {
       return res.status(400).json({
         error: 'UNSUPPORTED_PROVIDER',
         message: `SSO provider '${provider}' is not supported`,
@@ -157,105 +236,51 @@ authRoutes.post('/sso/:provider', async (req, res) => {
       });
     }
     
-    // Mock SSO user data - with intentional missing properties
-    const ssoUserData: Record<string, any> = {
-      google: {
-        id: '1',
-        email: 'alex@example.com',
-        name: 'Alex Johnson',
-        // BUG: Missing avatar URL that frontend expects
-        // avatar: 'https://...',
-        verified: true,
-        // BUG: Missing social profile data structure
-        oauth: {
-          // BUG: Missing 'scopes' object that frontend tries to access
-          provider: 'google',
-          externalId: 'google-123456'
-        }
-      },
-      github: {
-        id: '1', 
-        email: 'alex@example.com',
-        name: 'Alex Johnson',
-        avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg',
-        verified: false,
-        // BUG: Different data structure than Google
-        social: {
-          github: {
-            username: 'alexjohnson',
-            // BUG: missing 'avatar' property in nested structure
-            verified: false
-          }
+    // Return successful SSO response (this should not be reached)
+    const responseData = {
+      user: {
+        ...authenticatedUser,
+        role: 'student',
+        // BUG: Backend assumes frontend can handle these JWT-specific fields
+        jwtClaims: {
+          sub: authenticatedUser.id,
+          email: authenticatedUser.email,
+          exp: Math.floor(Date.now() / 1000) + 3600
         },
-        // BUG: Missing 'accounts' object that frontend expects
-      }
+        socialProfile: {
+          profileImage: authenticatedUser.avatar,
+          verified: authenticatedUser.verified,
+          provider: provider
+        },
+        linkedAccounts: [{
+          provider: provider,
+          externalId: authenticatedUser.id,
+          profile: {
+            username: authenticatedUser.email.split('@')[0],
+            avatar: authenticatedUser.avatar
+          }
+        }]
+      },
+      token: `sso-token-${createId()}`,
+      expiresIn: '24h'
     };
     
-    const userData = ssoUserData[provider!];
-    
-    if (!userData) {
-      return res.status(401).json({
-        error: 'SSO_AUTH_FAILED',
-        message: `Failed to authenticate with ${provider}`,
-        provider
-      });
-    }
-    
-    try {
-      // BUG: Try to construct response with assumptions about data structure
-      const socialProfile = {
-        profileImage: userData.social?.[provider!]?.avatar, // Will fail for Google
-        verified: userData.social?.[provider!]?.verified,   // Will fail for Google  
-        permissions: userData.oauth?.scopes?.[provider!]?.permissions // Will fail - nested missing
-      };
-      
-      // BUG: Try to map linked accounts that don't exist
-      const linkedAccounts = userData.accounts?.linked?.map((account: any) => ({
-        provider: account.provider,
-        externalId: account.id
-      })) || [];
-      
-      const responseData = {
-        user: {
-          ...userData,
-          role: 'student',
-          socialProfile,
-          linkedAccounts,
-          authProvider: provider
-        },
-        token: `sso-token-${createId()}`,
-        expiresIn: '24h'
-      };
-      
-      console.log(`Successful SSO login with ${provider}`);
-      res.json(responseData);
-      
-    } catch (dataError) {
-      // BUG: Send partial response that will cause frontend issues
-      console.error('SSO data processing error:', dataError);
-      
-      res.json({
-        user: {
-          ...userData,
-          role: 'student',
-          authProvider: provider,
-          // BUG: Missing expected SSO-specific properties
-          socialProfile: null,
-          linkedAccounts: []
-        },
-        token: `sso-token-${createId()}`,
-        expiresIn: '24h',
-        warnings: [`Some ${provider} profile data unavailable`]
-      });
-    }
+    console.log(`Successful SSO login with ${provider}`);
+    res.json(responseData);
     
   } catch (error: any) {
     console.error('SSO login error:', error);
     
+    // BUG: Catch-all error that doesn't provide specific information
     res.status(500).json({
       error: 'SSO_SERVICE_ERROR', 
-      message: `${req.params.provider} authentication service error`,
-      provider: req.params.provider
+      message: `${req.params.provider} authentication service encountered an error`,
+      code: 'SSO_INTERNAL_ERROR',
+      provider: req.params.provider,
+      details: {
+        timestamp: new Date().toISOString(),
+        hint: 'Check server logs for more details'
+      }
     });
   }
 });

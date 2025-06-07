@@ -1,14 +1,14 @@
-# Sentry Academy Workshop: Debugging Authentication Issues
+# Sentry Academy Workshop: JWT Authentication Debugging
 
-Welcome to this hands-on workshop! You'll debug realistic authentication bugs that occur when frontend applications consume backend APIs with inconsistent data structures. By the end, you'll have learned to identify, fix, and monitor authentication issues in production applications.
+Welcome to this hands-on workshop! You'll debug a realistic authentication bug involving JWT token miscommunication between frontend and backend teams. This scenario demonstrates how production authentication failures occur when teams make different assumptions about API contracts.
 
 ## 🎯 Learning Objectives
 
-- Identify common property access errors in authentication flows
-- Debug backend API data inconsistencies
-- Implement defensive programming techniques
-- Add error monitoring with Sentry
-- Apply best practices for production authentication
+- Debug JWT token authentication flow issues
+- Identify frontend/backend API contract mismatches  
+- Fix authentication property access errors
+- Implement proper error handling for authentication
+- Add comprehensive error monitoring with Sentry
 
 ## 🛠️ Setup Instructions
 
@@ -26,299 +26,343 @@ Welcome to this hands-on workshop! You'll debug realistic authentication bugs th
 
 ---
 
-## 🔍 Step 1: Reproduce the Authentication Issues
+## 🔍 Step 1: Reproduce the Authentication Bug
 
-Let's start by experiencing the authentication problems firsthand.
+The main authentication issue occurs with Single Sign-On (SSO) login.
 
-### 1.1 Test Regular Login
+### 1.1 Experience the Primary Issue (SSO Login)
 
 1. Navigate to: http://localhost:5173/login
-2. Enter credentials:
-   - Email: `alex@example.com`
-   - Password: `any-password`
-3. Click "Sign in"
-4. **Watch the browser console** for JavaScript errors
+2. **Click "Continue with Google" or "Continue with Github"**
+3. **Watch the browser console** for errors
+4. **Note**: Username/password login is hidden by default
 
 **📝 What to observe:**
-- Does the login succeed or fail?
-- What errors appear in the console?
-- What happens to the user interface?
+- Authentication fails immediately
+- Console shows JWT token generation but no successful login
+- Error messages about missing JWT token requirements
 
-### 1.2 Test Alternative User
+### 1.2 Check Alternative Login Method
 
-1. Try logging in with:
-   - Email: `demo@example.com`
+1. **Check the checkbox** "Use Username/Password Login instead"
+2. This reveals the traditional email/password form
+3. Try logging in with:
+   - Email: `alex@example.com` 
    - Password: `any-password`
-2. **Compare the errors** with the previous login attempt
+4. **Compare the different error patterns**
 
-### 1.3 Test SSO Login
+### 1.3 Document Your Findings
 
-1. Click "Continue with Google" or "Continue with Github"
-2. **Observe different error patterns** from regular login
-
-### 1.4 Document Your Findings
-
-Write down the error messages you see. Common patterns include:
-- `Cannot read property 'X' of undefined`
-- `Cannot read property 'theme' of undefined`
-- `Cannot read property 'lastLogin' of undefined`
+Write down what you observe:
+- What happens when you click SSO buttons?
+- What errors appear in the browser console?
+- How do the SSO and username/password flows differ?
+- What error messages do you see in the UI?
 
 ---
 
-## 🔧 Step 2: Analyze the Backend API Issues
+## 🔧 Step 2: Investigate the Backend API Failure
 
-Let's examine what the backend is actually returning.
+Let's examine what the backend expects vs. what it receives.
 
-### 2.1 Test Backend API Directly
+### 2.1 Test the SSO API Directly
 
-Open a terminal and test the backend authentication endpoint:
+Open a terminal and test the backend SSO endpoint:
 
 ```bash
-# Test login API
-curl -X POST http://localhost:3001/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"alex@example.com","password":"test"}'
-
-# Test SSO API
+# Test what the frontend is actually sending
 curl -X POST http://localhost:3001/api/auth/sso/google \
   -H "Content-Type: application/json" \
-  -d '{"code":"test","state":"test"}'
+  -d '{
+    "userData": {
+      "email": "demo.user.google@example.com",
+      "name": "Demo Google User", 
+      "provider": "google",
+      "timestamp": "2025-01-15T10:30:00Z"
+    },
+    "code": "mock-oauth-code",
+    "state": "mock-state"
+  }'
 ```
 
 **📝 Analysis Questions:**
-- What data structure does the backend return?
-- What properties are missing?
-- How do different authentication methods return different structures?
+- What error does the backend return?
+- What specific field is missing?
+- What does the error message tell you about backend expectations?
 
-### 2.2 Examine Backend Code
+### 2.2 Test with JWT Token
 
-Open `apps/server/src/modules/auth/routes.ts` and find these problematic patterns:
+Try the same request but include the missing JWT token:
 
-**Task**: Locate the following bugs in the backend code:
+```bash
+# Test with the expected JWT token
+curl -X POST http://localhost:3001/api/auth/sso/google \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userData": {
+      "email": "demo.user.google@example.com",
+      "name": "Demo Google User",
+      "provider": "google", 
+      "timestamp": "2025-01-15T10:30:00Z"
+    },
+    "code": "mock-oauth-code",
+    "state": "mock-state",
+    "jwtToken": "eyJzdWIiOiJ1c2VyLTEyMyIsImVtYWlsIjoidXNlckBleGFtcGxlLmNvbSIsIm5hbWUiOiJEZW1vIFVzZXIiLCJwcm92aWRlciI6Imdvb2dsZSIsImlhdCI6MTczNzAyMjIwMCwiZXhwIjoxNzM3MDI1ODAwfQ=="
+  }'
+```
 
-1. **Missing property access** (around line 81):
+**📝 Analysis Questions:**
+- Does this request succeed or fail differently?
+- What does this tell you about JWT validation?
+
+### 2.3 Examine Backend Code
+
+Open `apps/server/src/modules/auth/routes.ts` and find the SSO endpoint (around line 135):
+
+**Task**: Locate these backend issues:
+
+1. **Missing JWT Token Validation** (around line 155):
    ```javascript
-   const lastLoginDate = userProfile.metadata?.lastLogin; // Will throw for some users
-   const emailNotifications = userProfile.settings?.email?.notifications; // Wrong property path
-   ```
-
-2. **Inconsistent user data structures** (lines 17-55):
-   - `alex@example.com` user missing `preferences` object
-   - `demo@example.com` user using `config` instead of `settings`
-
-3. **SSO data structure assumptions** (around line 170):
-   ```javascript
-   const socialProfile = {
-     profileImage: userData.social?.[provider!]?.avatar, // Will fail for Google
-     verified: userData.social?.[provider!]?.verified,   // Will fail for Google  
-   };
-   ```
-
----
-
-## 🐛 Step 3: Debug Frontend Assumptions
-
-Now let's examine how the frontend processes the backend data.
-
-### 3.1 Analyze Frontend Authentication Context
-
-Open `apps/frontend/src/contexts/AuthContext.tsx` and find these problematic patterns:
-
-**Task**: Locate these frontend bugs:
-
-1. **Direct property access without validation** (around line 47):
-   ```javascript
-   const userTheme = response.user.preferences.theme; // Will throw
-   const emailNotifications = response.user.settings.email.notifications; // Wrong path
-   ```
-
-2. **SSO data processing assumptions** (around line 130):
-   ```javascript
-   const socialProfile = {
-     profileImage: response.user.socialProfile.profileImage, // May not exist
-     verified: response.user.socialProfile.verified,
-   };
-   ```
-
-3. **Array operations on potentially missing data** (around line 142):
-   ```javascript
-   const linkedAccounts = response.user.linkedAccounts.map((account: any) => ({
-     // Will fail if linkedAccounts is undefined
-   }));
-   ```
-
-### 3.2 Examine UI Component Issues
-
-Open `apps/frontend/src/components/layout/Navbar.tsx` and find:
-
-**Task**: Locate UI bugs related to property access:
-
-1. **Dynamic property access** in helper functions
-2. **Assumptions about user data structure** in the profile dropdown
-3. **Missing fallback handling** for incomplete user data
-
----
-
-## 🚀 Step 4: Implement the Fixes
-
-Now we'll fix the issues step by step.
-
-### 4.1 Fix Backend Data Validation
-
-**File**: `apps/server/src/modules/auth/routes.ts`
-
-**Task**: Replace the problematic property access with safe alternatives:
-
-1. **Fix the login endpoint** (around line 81):
-   ```javascript
-   // BEFORE (Broken):
-   const lastLoginDate = userProfile.metadata?.lastLogin; // undefined for some users
-   const emailNotifications = userProfile.settings?.email?.notifications; // wrong path
-   
-   // AFTER (Fixed):
-   const lastLoginDate = userProfile.metadata?.lastLogin || new Date().toISOString();
-   const emailNotifications = userProfile.settings?.email?.notifications || 
-                             userProfile.profile?.notifications || 
-                             false;
-   ```
-
-2. **Standardize the response structure**:
-   ```javascript
-   // Add this standardization before returning the response
-   const standardizedUser = {
-     ...userProfile,
-     preferences: userProfile.preferences || { theme: 'light' },
-     settings: {
-       email: {
-         notifications: userProfile.profile?.notifications || userProfile.config?.email?.notifications || false
-       },
-       privacy: {
-         level: userProfile.config?.privacy?.level || 'standard'
-       }
-     },
-     metadata: {
-       lastLogin: userProfile.metadata?.lastLogin || new Date().toISOString(),
-       signupDate: userProfile.metadata?.signupDate || new Date().toISOString()
-     }
-   };
-   ```
-
-3. **Fix SSO endpoint** with consistent structure handling.
-
-### 4.2 Fix Frontend Defensive Programming
-
-**File**: `apps/frontend/src/contexts/AuthContext.tsx`
-
-**Task**: Add safe property access and error handling:
-
-1. **Replace direct property access** (around line 47):
-   ```javascript
-   // BEFORE (Broken):
-   const userTheme = response.user.preferences.theme;
-   const emailNotifications = response.user.settings.email.notifications;
-   
-   // AFTER (Fixed):
-   const userTheme = response.user.preferences?.theme || 'light';
-   const emailNotifications = response.user.settings?.email?.notifications || 
-                             response.user.profile?.notifications || 
-                             false;
-   ```
-
-2. **Add comprehensive error handling**:
-   ```javascript
-   try {
-     // Process user data safely
-     const userProfile = processUserDataSafely(response.user);
-     setUser(userProfile);
-   } catch (dataError) {
-     // Create safe fallback profile
-     const fallbackProfile = createSafeUserProfile(response.user);
-     setUser(fallbackProfile);
-     console.warn('Some profile data could not be loaded');
+   // BUG: Backend expects JWT token that frontend doesn't send
+   if (!jwtToken) {
+     console.error(`JWT token missing for ${provider} SSO authentication`);
+     return res.status(400).json({
+       error: 'JWT_TOKEN_REQUIRED',
+       message: 'JWT token is required for SSO authentication',
+       // ...
+     });
    }
    ```
 
-### 4.3 Fix UI Component Safety
-
-**File**: `apps/frontend/src/components/layout/Navbar.tsx`
-
-**Task**: Update the helper functions to handle missing data:
-
-1. **Fix getUserSettingsInfo function**:
+2. **Problematic JWT Validation** (around lines 165-180):
    ```javascript
-   const getUserSettingsInfo = () => {
-     if (!user) return null;
-     
-     try {
-       return {
-         notifications: user.displaySettings?.showNotifications ?? 
-                       user.settings?.email?.notifications ?? 
-                       false,
-         privacy: user.displaySettings?.privacyLevel || 
-                 user.settings?.privacy?.level || 
-                 'standard',
-         theme: user.theme || user.preferences?.theme || 'light'
-       };
-     } catch (error) {
-       console.error('Error accessing user settings:', error);
-       return { notifications: false, privacy: 'standard', theme: 'light' };
-     }
+   // BUG: Try to access nested claims that don't exist
+   const userRoles = jwtPayload.claims.roles; // Will fail - no 'claims' object
+   const permissions = jwtPayload.permissions.scopes; // Will fail - no 'permissions' object
+   ```
+
+---
+
+## 🐛 Step 3: Debug Frontend Token Generation
+
+Now let's examine how the frontend handles JWT tokens.
+
+### 3.1 Analyze Frontend SSO Flow
+
+Open `apps/frontend/src/components/auth/LoginForm.tsx` and find the `handleSSO` function (around line 60):
+
+**Task**: Locate these frontend issues:
+
+1. **JWT Token Generation** (around lines 60-70):
+   ```javascript
+   // Generate JWT token on frontend (but won't send it correctly)
+   const jwtPayload = {
+     sub: 'user-123',
+     email: 'user@example.com',
+     // ...
    };
+   
+   // BUG: Frontend generates JWT but doesn't include it in the request
+   const generatedJWT = btoa(JSON.stringify(jwtPayload));
+   console.log('Generated JWT token (not being sent):', generatedJWT);
+   ```
+
+2. **Check the browser console** - you should see the JWT token being generated but note that it's not being sent to the backend.
+
+### 3.2 Examine Frontend Auth Context
+
+Open `apps/frontend/src/contexts/AuthContext.tsx` and find the `ssoLogin` function (around line 120):
+
+**Task**: Locate these issues:
+
+1. **Missing JWT Token in Request** (around lines 140-150):
+   ```javascript
+   const response = await authService.ssoLogin(provider, {
+     userData: mockUserData,
+     // BUG: Missing 'jwtToken' field that backend expects
+     // jwtToken: generatedJWT, // <-- This is what backend expects but frontend doesn't send
+     code: 'mock-oauth-code',
+     state: 'mock-state'
+   });
+   ```
+
+2. **Frontend assumes success** (around lines 155+):
+   ```javascript
+   // BUG: Try to access JWT data that won't exist due to backend error
+   jwtClaims: response.user.jwtClaims.sub, // Will throw error
+   tokenExpiry: response.user.jwtClaims.exp // Will throw error
+   ```
+
+---
+
+## 🚀 Step 4: Fix the Authentication Flow
+
+Now we'll fix the issues step by step.
+
+### 4.1 Fix Frontend JWT Token Sending
+
+**File**: `apps/frontend/src/components/auth/LoginForm.tsx`
+
+**Task**: Modify the `handleSSO` function to properly pass the JWT token:
+
+1. **Find the JWT generation code** (around line 65):
+   ```javascript
+   // BEFORE (Broken):
+   // BUG: Frontend generates JWT but doesn't include it in the request
+   const generatedJWT = btoa(JSON.stringify(jwtPayload));
+   console.log('Generated JWT token (not being sent):', generatedJWT);
+   
+   // Automatically trigger SSO login with dummy data
+   await ssoLogin(provider);
+   
+   // AFTER (Fixed):
+   // Generate and properly send JWT token
+   const generatedJWT = btoa(JSON.stringify(jwtPayload));
+   console.log('Generated JWT token (being sent):', generatedJWT);
+   
+   // Pass the JWT token to the SSO login function
+   await ssoLogin(provider, generatedJWT);
+   ```
+
+### 4.2 Fix Frontend Auth Context
+
+**File**: `apps/frontend/src/contexts/AuthContext.tsx`
+
+**Task**: Update the `ssoLogin` function to handle JWT tokens:
+
+1. **Update function signature** (around line 120):
+   ```javascript
+   // BEFORE:
+   const ssoLogin = async (provider: string): Promise<void> => {
+   
+   // AFTER:
+   const ssoLogin = async (provider: string, jwtToken?: string): Promise<void> => {
+   ```
+
+2. **Fix the API call** (around line 150):
+   ```javascript
+   // BEFORE (Broken):
+   const response = await authService.ssoLogin(provider, {
+     userData: mockUserData,
+     // BUG: Missing 'jwtToken' field that backend expects
+     code: 'mock-oauth-code',
+     state: 'mock-state'
+   });
+   
+   // AFTER (Fixed):
+   const response = await authService.ssoLogin(provider, {
+     userData: mockUserData,
+     jwtToken: jwtToken, // Include the JWT token
+     code: 'mock-oauth-code',
+     state: 'mock-state'
+   });
+   ```
+
+3. **Fix response processing** (around line 160):
+   ```javascript
+   // BEFORE (Broken):
+   // BUG: Try to access JWT data that won't exist due to backend error
+   jwtClaims: response.user.jwtClaims.sub, // Will throw error
+   tokenExpiry: response.user.jwtClaims.exp // Will throw error
+   
+   // AFTER (Fixed):
+   // Safely access JWT claims with fallbacks
+   jwtClaims: response.user.jwtClaims?.sub || 'unknown',
+   tokenExpiry: response.user.jwtClaims?.exp || null
+   ```
+
+### 4.3 Update AuthContext Interface
+
+**File**: `apps/frontend/src/contexts/AuthContext.tsx`
+
+**Task**: Update the interface to support JWT tokens:
+
+```javascript
+// BEFORE:
+interface AuthContextType {
+  // ...
+  ssoLogin: (provider: string) => Promise<void>;
+}
+
+// AFTER:
+interface AuthContextType {
+  // ...
+  ssoLogin: (provider: string, jwtToken?: string) => Promise<void>;
+}
+```
+
+### 4.4 Fix Backend JWT Validation
+
+**File**: `apps/server/src/modules/auth/routes.ts`
+
+**Task**: Improve JWT validation to handle malformed tokens:
+
+1. **Add better JWT validation** (around line 165):
+   ```javascript
+   // BEFORE (Problematic):
+   // BUG: Try to access nested claims that don't exist
+   const userRoles = jwtPayload.claims.roles; // Will fail
+   const permissions = jwtPayload.permissions.scopes; // Will fail
+   
+   // AFTER (Fixed):
+   // Safely validate JWT structure
+   const userEmail = jwtPayload.email || 'unknown';
+   const userSub = jwtPayload.sub || 'unknown';
+   const jwtProvider = jwtPayload.provider;
+   
+   // Optional validation for advanced claims
+   const userRoles = jwtPayload.claims?.roles || [];
+   const permissions = jwtPayload.permissions?.scopes || [];
    ```
 
 ---
 
 ## 📊 Step 5: Add Sentry Error Monitoring
 
-Now let's add proper error monitoring to catch these issues in production.
+Now let's add proper monitoring to catch these authentication issues.
 
 ### 5.1 Add Sentry to Backend
 
 **File**: `apps/server/src/modules/auth/routes.ts`
 
-**Task**: Add Sentry instrumentation:
+**Task**: Add Sentry monitoring to authentication endpoints:
 
 1. **Import Sentry** at the top:
    ```javascript
    import * as Sentry from '@sentry/node';
    ```
 
-2. **Add error tracking to login endpoint**:
+2. **Add monitoring to JWT validation**:
    ```javascript
-   authRoutes.post('/login', async (req, res) => {
-     try {
-       const { email, password } = req.body;
-       
-       // Add breadcrumb for debugging
-       Sentry.addBreadcrumb({
-         message: 'Login attempt',
-         category: 'auth',
-         data: { email: email?.substring(0, 3) + '***' }
-       });
-       
-       // ... existing code ...
-       
-     } catch (error) {
-       Sentry.captureException(error, {
-         tags: { section: 'authentication' },
-         extra: { endpoint: 'login', email: req.body.email }
-       });
-       // ... existing error handling ...
-     }
-   });
-   ```
-
-3. **Add monitoring to data processing errors**:
-   ```javascript
-   } catch (dataError) {
-     Sentry.captureException(dataError, {
-       tags: { section: 'data-processing' },
+   // Add to JWT validation failure
+   if (!jwtToken) {
+     Sentry.captureMessage('JWT token missing in SSO request', {
+       level: 'warning',
+       tags: { section: 'authentication', provider: provider },
        extra: { 
-         userProfile: userProfile,
-         missingProperties: ['preferences', 'metadata', 'settings']
+         receivedFields: Object.keys(req.body),
+         expectedFields: ['jwtToken'],
+         endpoint: `/sso/${provider}`
        }
      });
-     // ... existing fallback logic ...
+     console.error(`JWT token missing for ${provider} SSO authentication`);
+     // ... existing error response
+   }
+   ```
+
+3. **Monitor JWT validation errors**:
+   ```javascript
+   } catch (jwtError: any) {
+     Sentry.captureException(jwtError, {
+       tags: { section: 'jwt-validation', provider: provider },
+       extra: { 
+         jwtToken: jwtToken ? 'present' : 'missing',
+         provider: provider,
+         requestBody: req.body
+       }
+     });
+     console.error('JWT validation failed:', jwtError);
+     // ... existing error response
    }
    ```
 
@@ -326,287 +370,173 @@ Now let's add proper error monitoring to catch these issues in production.
 
 **File**: `apps/frontend/src/contexts/AuthContext.tsx`
 
-**Task**: Add frontend error monitoring:
+**Task**: Add frontend authentication monitoring:
 
 1. **Import Sentry**:
    ```javascript
    import * as Sentry from '@sentry/react';
    ```
 
-2. **Add user context and error tracking**:
+2. **Monitor SSO authentication attempts**:
    ```javascript
-   const login = async (email: string, password: string): Promise<void> => {
+   const ssoLogin = async (provider: string, jwtToken?: string): Promise<void> => {
+     // Add transaction for performance monitoring
+     const transaction = Sentry.startTransaction({
+       name: 'sso-authentication',
+       op: 'auth',
+       tags: { provider: provider }
+     });
+     
      try {
-       const response = await authService.login({ email, password });
-       
-       // Set user context for Sentry
-       Sentry.setUser({
-         id: response.user.id,
-         email: response.user.email,
-         username: response.user.name
-       });
-       
-       // Add breadcrumb for successful data processing
+       // Add breadcrumb for debugging
        Sentry.addBreadcrumb({
-         message: 'User data processed successfully',
+         message: `SSO login attempt with ${provider}`,
          category: 'auth',
-         level: 'info'
-       });
-       
-       // ... existing code ...
-       
-     } catch (dataProcessingError) {
-       Sentry.captureException(dataProcessingError, {
-         tags: { 
-           section: 'frontend-data-processing',
-           authMethod: 'email-password'
-         },
-         extra: {
-           backendResponse: response,
-           missingProperties: ['preferences.theme', 'settings.email', 'metadata.lastLogin']
+         data: { 
+           provider: provider, 
+           hasJwtToken: !!jwtToken,
+           timestamp: new Date().toISOString()
          }
        });
-       // ... existing fallback logic ...
+       
+       // ... existing authentication code ...
+       
+       transaction.setStatus('ok');
+     } catch (error: any) {
+       transaction.setStatus('internal_error');
+       
+       // Capture authentication failures with context
+       Sentry.captureException(error, {
+         tags: { 
+           section: 'sso-authentication',
+           provider: provider,
+           hasJwtToken: !!jwtToken
+         },
+         extra: {
+           errorMessage: error.message,
+           provider: provider,
+           jwtTokenProvided: !!jwtToken
+         }
+       });
+       
+       // ... existing error handling ...
+     } finally {
+       transaction.finish();
      }
    };
-   ```
-
-3. **Add performance monitoring**:
-   ```javascript
-   const loginTransaction = Sentry.startTransaction({
-     name: 'user-login',
-     op: 'authentication'
-   });
-   
-   try {
-     // ... login logic ...
-     loginTransaction.setStatus('ok');
-   } catch (error) {
-     loginTransaction.setStatus('internal_error');
-     throw error;
-   } finally {
-     loginTransaction.finish();
-   }
    ```
 
 ---
 
 ## ✅ Step 6: Test Your Fixes
 
-Let's verify that our fixes work correctly.
+Let's verify that the authentication now works correctly.
 
-### 6.1 Test Authentication Flows
+### 6.1 Test SSO Authentication Flow
 
-1. **Regular Login Test**:
-   - Login with `alex@example.com`
-   - Verify: No console errors
-   - Verify: Profile displays correctly
-   - Verify: All UI elements work
+1. **Clear browser cache and localStorage**
+2. **Navigate to login page**: http://localhost:5173/login
+3. **Click "Continue with Google" or "Continue with Github"**
+4. **Verify**: 
+   - No console errors
+   - Successful authentication  
+   - User profile displays correctly
+   - JWT token is sent and validated
 
-2. **Demo User Test**:
-   - Login with `demo@example.com`
-   - Verify: Different data structures handled correctly
-   - Verify: Fallback mechanisms work
+### 6.2 Verify Backend API
 
-3. **SSO Test**:
-   - Try Google and GitHub SSO
-   - Verify: Consistent behavior across providers
-   - Verify: Missing data shows appropriate fallbacks
+Test the backend directly with the fix:
 
-### 6.2 Verify Error Monitoring
+```bash
+# Test with proper JWT token (should now work)
+curl -X POST http://localhost:3001/api/auth/sso/google \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userData": {
+      "email": "demo.user.google@example.com",
+      "name": "Demo Google User",
+      "provider": "google",
+      "timestamp": "2025-01-15T10:30:00Z"
+    },
+    "code": "mock-oauth-code", 
+    "state": "mock-state",
+    "jwtToken": "eyJzdWIiOiJ1c2VyLTEyMyIsImVtYWlsIjoidXNlckBleGFtcGxlLmNvbSIsIm5hbWUiOiJEZW1vIFVzZXIiLCJwcm92aWRlciI6Imdvb2dsZSIsImlhdCI6MTczNzAyMjIwMCwiZXhwIjoxNzM3MDI1ODAwfQ=="
+  }'
+```
 
-1. **Check Sentry Dashboard** for captured events
-2. **Test intentional errors** by temporarily breaking something
+### 6.3 Verify Error Monitoring
+
+1. **Check Sentry dashboard** for authentication events
+2. **Test intentional failures** by sending malformed JWT tokens
 3. **Verify error context** includes useful debugging information
-
-### 6.3 Performance Testing
-
-1. **Monitor login performance** in browser dev tools
-2. **Check network requests** for API response times
-3. **Verify error boundaries** don't crash the application
 
 ---
 
-## 🎓 Step 7: Implement Best Practices
+## 🎓 Step 7: Understanding the Root Cause
 
-Let's add some production-ready improvements.
+### What Went Wrong?
 
-### 7.1 Add TypeScript Interfaces
+1. **API Contract Mismatch**: Frontend team didn't know backend required JWT token
+2. **Poor Communication**: Different assumptions about authentication flow
+3. **Missing Validation**: Frontend generated JWT but didn't send it
+4. **Inadequate Error Handling**: Generic error messages didn't identify the real issue
+5. **No Monitoring**: No observability into authentication failures
 
-**File**: `apps/frontend/src/types/auth.ts` (create new file)
+### Production Lessons
 
-**Task**: Define proper types for authentication:
-
-```typescript
-export interface AuthUser extends User {
-  preferences?: {
-    theme: 'light' | 'dark';
-    notifications?: boolean;
-  };
-  settings?: {
-    email?: {
-      notifications: boolean;
-    };
-    privacy?: {
-      level: 'public' | 'private' | 'standard';
-    };
-  };
-  metadata?: {
-    lastLogin?: string;
-    signupDate?: string;
-  };
-  socialProfiles?: SocialProfile[];
-  displaySettings?: {
-    showNotifications: boolean;
-    privacyLevel: string;
-  };
-}
-
-export interface SocialProfile {
-  provider: string;
-  avatar?: string;
-  verified: boolean;
-}
-```
-
-### 7.2 Add Error Boundaries
-
-**File**: `apps/frontend/src/components/ErrorBoundary.tsx` (create new file)
-
-**Task**: Create React error boundary:
-
-```typescript
-import React from 'react';
-import * as Sentry from '@sentry/react';
-
-interface Props {
-  children: React.ReactNode;
-  fallback?: React.ComponentType<{error: Error}>;
-}
-
-interface State {
-  hasError: boolean;
-  error?: Error;
-}
-
-class ErrorBoundary extends React.Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    Sentry.captureException(error, {
-      contexts: {
-        react: {
-          componentStack: errorInfo.componentStack,
-        },
-      },
-    });
-  }
-
-  render() {
-    if (this.state.hasError) {
-      const FallbackComponent = this.props.fallback;
-      if (FallbackComponent && this.state.error) {
-        return <FallbackComponent error={this.state.error} />;
-      }
-      
-      return (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">
-              Something went wrong
-            </h2>
-            <p className="text-gray-600">
-              Please refresh the page or try again later.
-            </p>
-          </div>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
-export default ErrorBoundary;
-```
-
-### 7.3 Add Comprehensive Logging
-
-**Task**: Enhance logging throughout the application:
-
-```javascript
-// Backend logging
-const logger = {
-  info: (message: string, extra?: any) => {
-    console.log(`[INFO] ${message}`, extra);
-    Sentry.addBreadcrumb({ message, level: 'info', data: extra });
-  },
-  error: (message: string, error?: Error, extra?: any) => {
-    console.error(`[ERROR] ${message}`, error, extra);
-    Sentry.captureException(error || new Error(message), { extra });
-  },
-  warn: (message: string, extra?: any) => {
-    console.warn(`[WARN] ${message}`, extra);
-    Sentry.captureMessage(message, 'warning');
-  }
-};
-```
+✅ **API Contracts**: Document required fields clearly
+✅ **Communication**: Ensure frontend/backend teams align on authentication flow  
+✅ **Validation**: Validate all required fields are present
+✅ **Error Messages**: Provide specific, actionable error messages
+✅ **Monitoring**: Track authentication failures with context
+✅ **Testing**: Test authentication flows end-to-end
 
 ---
 
 ## 🏆 Step 8: Wrap-up and Review
 
-Congratulations! You've successfully debugged and fixed authentication issues.
+Congratulations! You've successfully debugged a realistic JWT authentication issue.
 
 ### What You've Learned
 
-✅ **Property Access Errors**: How missing nested objects cause runtime failures
-✅ **Defensive Programming**: Using optional chaining and fallbacks
-✅ **Error Monitoring**: Implementing Sentry for production debugging  
-✅ **API Consistency**: Ensuring backend responses are predictable
-✅ **User Experience**: Graceful degradation when data is missing
-✅ **Type Safety**: Using TypeScript to prevent structure assumptions
+✅ **API Contract Issues**: How missing fields cause authentication failures
+✅ **JWT Token Flow**: Frontend generation and backend validation 
+✅ **Error Debugging**: Using specific error messages to identify issues
+✅ **Team Communication**: Importance of aligned API expectations
+✅ **Production Monitoring**: Capturing authentication failures with context
 
 ### Production Checklist
 
-- [ ] All authentication flows tested
-- [ ] Error handling covers edge cases  
-- [ ] User data is properly validated
-- [ ] Fallback mechanisms work correctly
-- [ ] Error monitoring is configured
-- [ ] API responses are documented
-- [ ] Type safety is enforced
-- [ ] Performance impact is minimal
+- [ ] Frontend sends all required authentication fields
+- [ ] Backend validates JWT tokens properly
+- [ ] Error messages are specific and actionable
+- [ ] Authentication flows are end-to-end tested
+- [ ] Monitoring captures authentication failures
+- [ ] API contracts are documented and shared
+- [ ] Team communication covers authentication requirements
 
 ### Key Takeaways
 
-1. **Never assume data structure** - Always validate before accessing nested properties
-2. **Provide meaningful fallbacks** - Users should never see "undefined" 
-3. **Monitor production errors** - Use tools like Sentry to catch issues early
-4. **Test all code paths** - Including error scenarios and missing data
-5. **Document API contracts** - Ensure frontend and backend teams align on data structures
+1. **Document API contracts** - Ensure both teams know what fields are required
+2. **Validate inputs** - Check for required fields and return specific errors
+3. **Monitor authentication** - Track failures with context for debugging
+4. **Test end-to-end** - Verify complete authentication flows work
+5. **Communicate changes** - Keep teams aligned on authentication requirements
 
 ### Next Steps
 
 - Set up Sentry alerting for authentication failures
 - Create API documentation for authentication endpoints
-- Implement automated testing for error scenarios
-- Review other parts of the application for similar issues
+- Implement automated testing for authentication flows
+- Establish team communication protocols for API changes
 
 ---
 
 ## 📚 Additional Resources
 
-- [Sentry Documentation](https://docs.sentry.io/)
-- [TypeScript Optional Chaining](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#optional-chaining)
-- [React Error Boundaries](https://reactjs.org/docs/error-boundaries.html)
-- [API Design Best Practices](https://docs.microsoft.com/en-us/azure/architecture/best-practices/api-design)
+- [JWT Best Practices](https://auth0.com/blog/a-look-at-the-latest-draft-for-jwt-bcp/)
+- [API Design Guidelines](https://docs.microsoft.com/en-us/azure/architecture/best-practices/api-design)
+- [Sentry Error Monitoring](https://docs.sentry.io/)
+- [Authentication Security](https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication)
 
 **Great job completing the workshop!** 🎉 

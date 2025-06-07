@@ -9,14 +9,17 @@ const SSOButton: React.FC<{
   label: string;
   provider: string;
   onClick: (provider: string) => void;
-}> = ({ icon, label, provider, onClick }) => (
+  isLoading?: boolean;
+}> = ({ icon, label, provider, onClick, isLoading = false }) => (
   <button
     type="button"
     onClick={() => onClick(provider)}
-    className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2 px-4 text-gray-700 hover:bg-purple-50 hover:border-purple-300 transition-colors"
+    disabled={isLoading}
+    className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-3 px-4 text-gray-700 hover:bg-purple-50 hover:border-purple-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
   >
     {icon}
     <span>{label}</span>
+    {isLoading && <div className="ml-2 w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>}
   </button>
 );
 
@@ -24,6 +27,7 @@ const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showUsernamePassword, setShowUsernamePassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -39,8 +43,6 @@ const LoginForm: React.FC = () => {
       await login(email, password);
       navigate('/');
     } catch (err: any) {
-      // Show the actual error message from the login attempt
-      // This will display realistic errors about missing user data
       setError(err.message || 'Invalid credentials. Please try again.');
     } finally {
       setIsLoading(false);
@@ -52,10 +54,25 @@ const LoginForm: React.FC = () => {
     setIsLoading(true);
 
     try {
+      // Generate JWT token on frontend (but won't send it correctly)
+      const jwtPayload = {
+        sub: 'user-123',
+        email: 'user@example.com',
+        name: 'Demo User',
+        provider: provider,
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 3600
+      };
+      
+      // BUG: Frontend generates JWT but doesn't include it in the request
+      // This simulates a common miscommunication between frontend and backend teams
+      const generatedJWT = btoa(JSON.stringify(jwtPayload));
+      console.log('Generated JWT token (not being sent):', generatedJWT);
+      
+      // Automatically trigger SSO login with dummy data
       await ssoLogin(provider);
       navigate('/');
     } catch (err: any) {
-      // Show the actual SSO error message which will include details about missing data
       setError(err.message || `Failed to authenticate with ${provider}. Please try again.`);
     } finally {
       setIsLoading(false);
@@ -69,109 +86,145 @@ const LoginForm: React.FC = () => {
         <p className="text-gray-600 mt-2">Sign in to continue learning</p>
       </div>
 
-      <div className="space-y-4 mb-6">
+      {/* Primary SSO Login Options */}
+      <div className="space-y-3 mb-6">
         <SSOButton
           icon={<GoogleIcon size={20} />}
           label="Continue with Google"
           provider="google"
           onClick={handleSSO}
+          isLoading={isLoading}
         />
         <SSOButton
           icon={<GithubIcon size={20} />}
           label="Continue with Github"
           provider="github"
           onClick={handleSSO}
+          isLoading={isLoading}
         />
       </div>
 
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-300"></div>
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white text-gray-500">Or continue with</span>
-        </div>
+      {/* Alternative Login Method Checkbox */}
+      <div className="mb-4">
+        <label className="flex items-center space-x-2 text-sm text-gray-600">
+          <input
+            type="checkbox"
+            checked={showUsernamePassword}
+            onChange={(e) => setShowUsernamePassword(e.target.checked)}
+            className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+          />
+          <span>Use Username/Password Login instead</span>
+        </label>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm border border-red-200">
+      {/* Username/Password Form (Hidden by default) */}
+      {showUsernamePassword && (
+        <>
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Username & Password</span>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm border border-red-200">
+                {error}
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email Address
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-900"
+                placeholder="you@example.com"
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-900"
+                  placeholder="•••••••••"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                  Remember me
+                </label>
+              </div>
+              <a href="#" className="text-sm font-medium text-purple-600 hover:text-purple-800">
+                Forgot password?
+              </a>
+            </div>
+
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              isLoading={isLoading}
+            >
+              Sign in
+            </Button>
+          </form>
+        </>
+      )}
+
+      {/* Footer */}
+      <div className="mt-6">
+        {error && !showUsernamePassword && (
+          <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm border border-red-200 mb-4">
             {error}
           </div>
         )}
-
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email Address
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-900"
-            placeholder="you@example.com"
-            required
-          />
-        </div>
-
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            Password
-          </label>
-          <div className="relative">
-            <input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-900"
-              placeholder="•••••••••"
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
-            >
-              {showPassword ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <input
-              id="remember-me"
-              name="remember-me"
-              type="checkbox"
-              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-            />
-            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-              Remember me
-            </label>
-          </div>
-          <a href="#" className="text-sm font-medium text-purple-600 hover:text-purple-800">
-            Forgot password?
+        
+        <p className="text-center text-sm text-gray-600">
+          Don't have an account?{' '}
+          <a href="#" className="font-medium text-purple-600 hover:text-purple-800">
+            Create one now
           </a>
+        </p>
+        
+        <div className="mt-4 text-center">
+          <p className="text-xs text-gray-500">
+            Experiencing issues? Try the username/password option above.
+          </p>
         </div>
-
-        <Button
-          type="submit"
-          variant="primary"
-          fullWidth
-          isLoading={isLoading}
-        >
-          Sign in
-        </Button>
-      </form>
-
-      <p className="mt-6 text-center text-sm text-gray-600">
-        Don't have an account?{' '}
-        <a href="#" className="font-medium text-purple-600 hover:text-purple-800">
-          Create one now
-        </a>
-      </p>
+      </div>
     </div>
   );
 };

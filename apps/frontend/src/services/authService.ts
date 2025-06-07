@@ -15,6 +15,13 @@ export interface LoginResponse {
 export interface SSORequest {
   code?: string;
   state?: string;
+  userData?: {
+    email: string;
+    name: string;
+    provider: string;
+    timestamp: string;
+  };
+  jwtToken?: string;
 }
 
 export interface AuthError {

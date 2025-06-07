@@ -138,100 +138,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const ssoLogin = async (provider: string): Promise<void> => {
     setIsLoading(true);
     try {
-      // Simulate OAuth flow - in real app would handle OAuth redirect
+      // BUG: Frontend team assumes they need to send a JWT token
+      // But they generate it incorrectly and don't actually send it
+      const mockUserData = {
+        email: `demo.user.${provider}@example.com`,
+        name: `Demo ${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+        provider: provider,
+        timestamp: new Date().toISOString()
+      };
+
+      console.log('Initiating SSO login with:', mockUserData);
+      console.log('JWT token was generated but not sent to backend');
+
+      // BUG: Call SSO endpoint without the JWT token that backend expects
+      // This simulates a miscommunication where frontend thinks they're sending auth
+      // but backend expects a different format
       const response = await authService.ssoLogin(provider, {
+        userData: mockUserData,
+        // BUG: Missing 'jwtToken' field that backend expects
+        // jwtToken: generatedJWT, // <-- This is what backend expects but frontend doesn't send
         code: 'mock-oauth-code',
         state: 'mock-state'
       });
 
-      console.log(`SSO login response received for ${provider}:`, { 
-        provider, 
-        hasUser: !!response.user 
-      });
+      // This should not be reached due to backend error
+      console.log('SSO response received:', response);
 
-      // BUG: Frontend assumes SSO responses have consistent structure across providers
-      try {
-        // BUG: Assume all SSO providers return social profile data in the same format
-        const socialProfile = {
-          profileImage: response.user.socialProfile.profileImage, // May not exist for all providers
-          verified: response.user.socialProfile.verified,
-          permissions: response.user.socialProfile.permissions // Backend might not include this
-        };
+      // BUG: If somehow we get here, try to process response that may be malformed
+      const ssoUserProfile = {
+        ...response.user,
+        authProvider: provider,
+        // BUG: Backend error response might not have expected structure
+        socialProfile: response.user.socialProfile || null,
+        linkedAccounts: response.user.linkedAccounts || [],
+        avatar: response.user.avatar || 'https://via.placeholder.com/150',
+        isVerified: response.user.verified || false,
+        // BUG: Try to access JWT data that won't exist due to backend error
+        jwtClaims: response.user.jwtClaims.sub, // Will throw error
+        tokenExpiry: response.user.jwtClaims.exp // Will throw error
+      };
 
-        // BUG: Assume linked accounts array always exists and is populated
-        const linkedAccounts = response.user.linkedAccounts.map((account: any) => ({
-          provider: account.provider,
-          externalId: account.externalId,
-          // BUG: Assume additional properties that backend might not provide
-          username: account.profile.username, // Nested property that may not exist
-          avatar: account.profile.avatar
-        }));
-
-        // BUG: Different assumption about user avatar source for SSO vs regular login
-        const avatarUrl = response.user.avatar || 
-                         response.user.socialProfile.profileImage || 
-                         response.user.social[provider].avatar; // Multiple fallback paths that may fail
-
-        const ssoUserProfile = {
-          ...response.user,
-          authProvider: provider,
-          socialProfile: socialProfile,
-          linkedAccounts: linkedAccounts,
-          avatar: avatarUrl,
-          // BUG: SSO-specific properties that might not be in response
-          isVerified: response.user.verified || response.user.social[provider].verified,
-          // BUG: OAuth-specific data that backend might structure differently
-          oauthTokens: {
-            accessToken: response.user.oauth.accessToken, // Nested path that may not exist
-            refreshToken: response.user.oauth.refreshToken,
-            scope: response.user.oauth.scopes[provider].join(' ') // Array manipulation on missing data
-          }
-        };
-
-        setUser(ssoUserProfile);
-        setIsAuthenticated(true);
-        localStorage.setItem('user', JSON.stringify(ssoUserProfile));
-        localStorage.setItem('authToken', response.token);
-        
-        console.log(`SSO login successful with ${provider}`);
-
-      } catch (ssoDataError) {
-        // BUG: SSO data processing failed due to backend inconsistencies
-        console.error(`Failed to process ${provider} SSO data:`, ssoDataError);
-        
-        // Create fallback SSO profile but still attempt to access some missing properties
-        const fallbackSSOProfile = {
-          ...response.user,
-          authProvider: provider,
-          socialProfile: null,
-          linkedAccounts: [],
-          // BUG: Still try to derive avatar from potentially missing sources
-          avatar: response.user.avatar || 'https://via.placeholder.com/150',
-          isVerified: false,
-          // BUG: Add incomplete OAuth data
-          oauthTokens: null,
-          ssoIncomplete: true,
-          ssoWarnings: response.warnings || [`${provider} profile data incomplete`]
-        };
-
-        setUser(fallbackSSOProfile);
-        setIsAuthenticated(true);
-        localStorage.setItem('user', JSON.stringify(fallbackSSOProfile));
-        localStorage.setItem('authToken', response.token);
-        
-        throw new Error(`${provider} login successful but some account data could not be loaded. Social features may be limited.`);
-      }
+      setUser(ssoUserProfile);
+      setIsAuthenticated(true);
+      localStorage.setItem('user', JSON.stringify(ssoUserProfile));
+      localStorage.setItem('authToken', response.token);
+      
+      console.log(`SSO login successful with ${provider}`);
 
     } catch (error: any) {
       console.error(`SSO login failed for ${provider}:`, error);
       
-      // Clear any partial state
-      setUser(null);
-      setIsAuthenticated(false);
-      localStorage.removeItem('user');
-      localStorage.removeItem('authToken');
+      // BUG: Frontend doesn't handle specific JWT validation errors properly
+      if (error.message.includes('JWT') || error.message.includes('token')) {
+        // This should help with debugging but might confuse users
+        throw new Error(`Authentication failed: JWT token validation error. Please contact support if this issue persists. (Error: ${error.message})`);
+      }
       
-      throw error;
+      // BUG: Generic error handling that doesn't give useful information
+      throw new Error(`Unable to authenticate with ${provider}. The authentication service may be temporarily unavailable.`);
     } finally {
       setIsLoading(false);
     }
