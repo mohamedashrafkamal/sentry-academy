@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { UserStateProvider } from './contexts/UserStateContext';
 import { useAuth } from './hooks/useAuth';
 import MainLayout from './components/layout/MainLayout';
 import HomePage from './pages/HomePage';
@@ -33,57 +34,59 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <SentryRoutes>
-          <Route path="/login" element={<LoginPage />} />
+      <UserStateProvider>
+        <Router>
+          <SentryRoutes>
+            <Route path="/login" element={<LoginPage />} />
 
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={
-              <ProtectedRoute>
-                <HomePage />
-              </ProtectedRoute>
-            } />
+            <Route path="/" element={<MainLayout />}>
+              <Route index element={
+                <ProtectedRoute>
+                  <HomePage />
+                </ProtectedRoute>
+              } />
 
-            <Route path="courses" element={
-              <ProtectedRoute>
-                <CoursesPage />
-              </ProtectedRoute>
-            } />
+              <Route path="courses" element={
+                <ProtectedRoute>
+                  <CoursesPage />
+                </ProtectedRoute>
+              } />
 
-            <Route path="courses/:courseId" element={
-              <ProtectedRoute>
-                <CourseDetailPage />
-              </ProtectedRoute>
-            } />
+              <Route path="courses/:courseId" element={
+                <ProtectedRoute>
+                  <CourseDetailPage />
+                </ProtectedRoute>
+              } />
 
-            <Route path="my-courses" element={
-              <ProtectedRoute>
-                <MyCoursesPage />
-              </ProtectedRoute>
-            } />
+              <Route path="my-courses" element={
+                <ProtectedRoute>
+                  <MyCoursesPage />
+                </ProtectedRoute>
+              } />
 
-            <Route path="favorites" element={
-              <ProtectedRoute>
-                <FavoritesPage />
-              </ProtectedRoute>
-            } />
+              <Route path="favorites" element={
+                <ProtectedRoute>
+                  <FavoritesPage />
+                </ProtectedRoute>
+              } />
 
-            <Route path="lesson-plans" element={
-              <ProtectedRoute>
-                <LessonPlansPage />
-              </ProtectedRoute>
-            } />
+              <Route path="lesson-plans" element={
+                <ProtectedRoute>
+                  <LessonPlansPage />
+                </ProtectedRoute>
+              } />
 
-            <Route path="profile" element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            } />
-          </Route>
+              <Route path="profile" element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              } />
+            </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </SentryRoutes>
-      </Router>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </SentryRoutes>
+        </Router>
+      </UserStateProvider>
     </AuthProvider>
   );
 }
