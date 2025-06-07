@@ -6,6 +6,7 @@ import { lessonRoutes } from './src/modules/lessons/routes';
 import { userRoutes } from './src/modules/users/routes';
 import { enrollmentRoutes } from './src/modules/enrollments/routes';
 import { searchRoutes } from './src/modules/search/routes';
+import { authRoutes } from './src/modules/auth/routes';
 import * as Sentry from '@sentry/node';
 
 const app = express();
@@ -54,6 +55,7 @@ app.use('/api', lessonRoutes);
 app.use('/api', userRoutes);
 app.use('/api', enrollmentRoutes);
 app.use('/api', searchRoutes);
+app.use('/api/auth', authRoutes);
 
 Sentry.setupExpressErrorHandler(app);
 
