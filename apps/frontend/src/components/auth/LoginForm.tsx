@@ -38,8 +38,10 @@ const LoginForm: React.FC = () => {
     try {
       await login(email, password);
       navigate('/');
-    } catch (err) {
-      setError('Invalid credentials. Please try again.');
+    } catch (err: any) {
+      // Show the actual error message from the login attempt
+      // This will display realistic errors about missing user data
+      setError(err.message || 'Invalid credentials. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -52,8 +54,9 @@ const LoginForm: React.FC = () => {
     try {
       await ssoLogin(provider);
       navigate('/');
-    } catch (err) {
-      setError(`Failed to authenticate with ${provider}. Please try again.`);
+    } catch (err: any) {
+      // Show the actual SSO error message which will include details about missing data
+      setError(err.message || `Failed to authenticate with ${provider}. Please try again.`);
     } finally {
       setIsLoading(false);
     }

@@ -113,16 +113,31 @@ const Navbar: React.FC = () => {
                   size="sm"
                 />
               )}
-              <span className="hidden md:block text-sm font-medium">{user?.name}</span>
+              <span className="hidden md:block text-sm font-medium">
+                {user?.name}
+                {/* BUG: Trying to access properties that don't exist or are corrupted */}
+                {/* This will fail for SSO users due to the corrupt data structure */}
+                {(user as any)?.settings?.notifications && (
+                  <span className="ml-1 text-xs text-green-500">●</span>
+                )}
+              </span>
             </button>
 
             {isProfileMenuOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
+                {/* BUG: Trying to display user metadata that doesn't exist */}
+                <div className="px-4 py-2 text-xs text-gray-500 border-b">
+                  Last login: {(user as any)?.lastLoginDate || 'Unknown'}
+                </div>
                 <a href="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                   Your Profile
                 </a>
                 <a href="/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                   Settings
+                  {/* BUG: Show settings count that will fail */}
+                  <span className="float-right text-xs text-gray-400">
+                    ({(user as any)?.settings?.privacy?.level})
+                  </span>
                 </a>
                 <button
                   onClick={handleLogout}

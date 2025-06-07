@@ -45,9 +45,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const loggedInUser = getUserById('1');
 
       if (loggedInUser) {
-        setUser(loggedInUser);
+        // BUG: Poorly written code that assumes user object structure
+        // This simulates real-world scenarios where backend data changes
+        // or frontend makes assumptions about data structure
+        
+        // BUG: Assume user always has metadata object with required fields
+        const userMetadata = (loggedInUser as any).metadata;
+        const lastLogin = userMetadata.lastLogin; // This will throw: Cannot read property 'lastLogin' of undefined
+        
+        // BUG: Assume user always has settings with nested email config
+        const emailSettings = (loggedInUser as any).settings.email;
+        const notificationEnabled = emailSettings.notifications; // This will throw: Cannot read property 'email' of undefined
+
+        const userProfile = {
+          ...loggedInUser,
+          // This part works fine
+          theme: (loggedInUser as any).preferences?.theme || 'light',
+          // These will cause the failure
+          lastLoginDate: lastLogin,
+          settings: {
+            notifications: notificationEnabled,
+            privacy: (loggedInUser as any).settings.privacy.level
+          }
+        };
+
+        setUser(userProfile);
         setIsAuthenticated(true);
-        localStorage.setItem('user', JSON.stringify(loggedInUser));
+        localStorage.setItem('user', JSON.stringify(userProfile));
       } else {
         throw new Error('Invalid credentials');
       }
@@ -70,9 +94,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const loggedInUser = getUserById('1');
 
       if (loggedInUser) {
-        setUser(loggedInUser);
+        // BUG: Different data structure assumptions for SSO vs regular login
+        // This simulates inconsistent data handling between auth methods
+        const ssoUserProfile = {
+          ...loggedInUser,
+          // SSO provider might return different data structure
+          provider: provider,
+          // This will throw "Cannot read property 'avatar' of undefined"
+          socialProfile: {
+            profileImage: (loggedInUser as any).social[provider].avatar,
+            verified: (loggedInUser as any).social[provider].verified,
+            // This will throw "Cannot read property 'scopes' of undefined"
+            permissions: (loggedInUser as any).oauth.scopes[provider].permissions
+          },
+          // This will throw "Cannot read property 'map' of undefined"
+          linkedAccounts: (loggedInUser as any).accounts.linked.map((account: any) => ({
+            provider: account.provider,
+            externalId: account.id
+          }))
+        };
+
+        setUser(ssoUserProfile);
         setIsAuthenticated(true);
-        localStorage.setItem('user', JSON.stringify(loggedInUser));
+        localStorage.setItem('user', JSON.stringify(ssoUserProfile));
       } else {
         throw new Error('SSO authentication failed');
       }
