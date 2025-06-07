@@ -1,30 +1,35 @@
 import React, { useState } from 'react';
-import { Star, Clock, Award, Plus, Check } from 'lucide-react';
+import { Star, Clock, Award, Plus, Check, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Course } from '../../types';
 import { Card, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { useAuth } from '../../hooks/useAuth';
-import { api } from '../../services/api';
+import { useUserState } from '../../hooks/useUserState';
 
 interface CourseCardProps {
   course: Course;
   className?: string;
-  isEnrolled?: boolean;
-  onEnrollmentChange?: () => void;
   showEnrollButton?: boolean;
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({
   course,
   className = '',
-  isEnrolled = false,
-  onEnrollmentChange,
   showEnrollButton = true
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { 
+    isCourseFavorited, 
+    isCourseEnrolled, 
+    toggleFavorite, 
+    enrollInCourse 
+  } = useUserState();
   const [isEnrolling, setIsEnrolling] = useState(false);
+
+  const isEnrolled = isCourseEnrolled(course.id);
+  const isFavorited = isCourseFavorited(course.id);
 
   const getLevelBadgeVariant = (level: string) => {
     switch (level) {
@@ -43,6 +48,17 @@ const CourseCard: React.FC<CourseCardProps> = ({
     navigate(`/courses/${course.id}`);
   };
 
+  const handleFavoriteToggle = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    
+    if (!user?.id) {
+      alert('Please log in to favorite courses');
+      return;
+    }
+
+    toggleFavorite(course);
+  };
+
   const handleEnroll = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
 
@@ -53,8 +69,9 @@ const CourseCard: React.FC<CourseCardProps> = ({
 
     setIsEnrolling(true);
     try {
-      await api.enrollments.create(course.id, user.id);
-      onEnrollmentChange?.();
+      // Simulate a brief delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 500));
+      enrollInCourse(course);
     } catch (error) {
       console.error('Failed to enroll:', error);
       alert('Failed to enroll in the course. Please try again.');
@@ -80,6 +97,21 @@ const CourseCard: React.FC<CourseCardProps> = ({
             <Badge variant="primary" size="sm">Featured</Badge>
           </div>
         )}
+        
+        {/* Favorite Heart Icon */}
+        <button
+          onClick={handleFavoriteToggle}
+          className={`absolute top-2 left-2 p-2 rounded-full transition-all duration-200 ${
+            isFavorited 
+              ? 'bg-red-500 text-white shadow-lg' 
+              : 'bg-white/80 text-gray-600 hover:bg-white hover:text-red-500'
+          }`}
+          title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          <Heart 
+            className={`h-4 w-4 ${isFavorited ? 'fill-current' : ''}`}
+          />
+        </button>
       </div>
 
       <CardContent className="space-y-3">

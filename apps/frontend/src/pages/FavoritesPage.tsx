@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getFavoriteCourses } from '../data/users';
-import { getCourseById } from '../data/courses';
-import { Course } from '../types';
+import { useUserState } from '../hooks/useUserState';
+import { api } from '../services/api';
+import { useApi } from '../hooks/useApi';
 import CourseGrid from '../components/courses/CourseGrid';
 import { Button } from '../components/ui/Button';
 import { BookOpen } from 'lucide-react';
@@ -10,15 +10,34 @@ import { useNavigate } from 'react-router-dom';
 
 const FavoritesPage: React.FC = () => {
   const { user } = useAuth();
+  const { getFavoritedCourses } = useUserState();
   const navigate = useNavigate();
 
-  let favoriteCourses: Course[] = [];
+  // Fetch all courses to get the full course data for favorited courses
+  const getAllCourses = useCallback(() => api.courses.getAll(), []);
+  const { data: allCourses, loading, error } = useApi(getAllCourses);
 
-  if (user) {
-    const favoriteIds = getFavoriteCourses(user.id);
-    favoriteCourses = favoriteIds
-      .map(id => getCourseById(id))
-      .filter((course): course is Course => course !== undefined);
+  const favoriteCourses = allCourses ? getFavoritedCourses(allCourses) : [];
+
+  if (loading) {
+    return (
+      <div className="container mx-auto max-w-7xl">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your favorites...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto max-w-7xl">
+        <div className="text-center py-12">
+          <p className="text-red-600">Failed to load your favorites. Please try again later.</p>
+        </div>
+      </div>
+    );
   }
 
   return (

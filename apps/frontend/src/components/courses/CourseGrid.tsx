@@ -7,8 +7,6 @@ interface CourseGridProps {
   title?: string;
   description?: string;
   className?: string;
-  enrolledCourseIds?: string[];
-  onEnrollmentChange?: () => void;
   showEnrollButton?: boolean;
 }
 
@@ -17,8 +15,6 @@ const CourseGrid: React.FC<CourseGridProps> = ({
   title, 
   description,
   className = '',
-  enrolledCourseIds = [],
-  onEnrollmentChange,
   showEnrollButton = true
 }) => {
   return (
@@ -40,8 +36,6 @@ const CourseGrid: React.FC<CourseGridProps> = ({
             <CourseCard 
               key={course.id} 
               course={course} 
-              isEnrolled={enrolledCourseIds.includes(course.id)}
-              onEnrollmentChange={onEnrollmentChange}
               showEnrollButton={showEnrollButton}
             />
           ))}
