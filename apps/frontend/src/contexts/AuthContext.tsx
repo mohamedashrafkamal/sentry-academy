@@ -1,7 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { authService } from '../services/authService';
-import * as Sentry from '@sentry/react';
 
 interface AuthContextType {
   user: User | null;
@@ -31,10 +30,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAuthenticated(true);
       } catch (error) {
         console.error('Failed to parse stored user', error);
-        Sentry.captureException(error, {
-          tags: { section: 'auth-initialization' },
-          extra: { storedUser: storedUser?.substring(0, 100) }
-        });
         localStorage.removeItem('user');
         localStorage.removeItem('authToken');
       }
@@ -54,106 +49,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       // BUG: Frontend assumes backend always returns complete user data
-      // This is where realistic frontend errors occur based on backend's missing properties
-      try {
-        // BUG: Assume user always has preferences object (backend sometimes doesn't include it)
-        const userTheme = response.user.preferences.theme; // Will throw: Cannot read property 'theme' of undefined
-        
-        // BUG: Assume user always has settings with nested email config (backend uses inconsistent structure)
-        const emailNotifications = response.user.settings.email.notifications; // Wrong property path from backend
-        
-        // BUG: Try to access metadata that might be missing or have different structure
-        const lastLoginDate = response.user.metadata.lastLogin; // Backend inconsistent with this field
-        
-        // BUG: Assume social profiles array always exists and has specific structure
-        const socialAvatars = response.user.socialProfiles.map((profile: any) => ({
-          provider: profile.provider,
-          avatar: profile.avatar || profile.profileImage, // Backend inconsistent naming
-          verified: profile.verified
-        }));
+      // This will throw errors that Sentry will automatically catch
+      
+      // BUG: Assume user always has preferences object (backend sometimes doesn't include it)
+      const userTheme = response.user.preferences.theme; // Will throw: Cannot read property 'theme' of undefined
+      
+      // BUG: Assume user always has settings with nested email config (backend uses inconsistent structure)
+      const emailNotifications = response.user.settings.email.notifications; // Wrong property path from backend
+      
+      // BUG: Try to access metadata that might be missing or have different structure
+      const lastLoginDate = response.user.metadata.lastLogin; // Backend inconsistent with this field
+      
+      // BUG: Assume social profiles array always exists and has specific structure
+      const socialAvatars = response.user.socialProfiles.map((profile: any) => ({
+        provider: profile.provider,
+        avatar: profile.avatar || profile.profileImage, // Backend inconsistent naming
+        verified: profile.verified
+      }));
 
-        // Construct user profile with assumptions about data structure
-        const userProfile = {
-          ...response.user,
-          // These will work fine when data exists
-          theme: userTheme || 'light',
-          notifications: emailNotifications,
-          lastLoginDate: lastLoginDate,
-          socialAvatars: socialAvatars,
-          // BUG: Add derived properties that assume nested structures exist
-          displaySettings: {
-            showNotifications: response.user.settings.privacy.notifications, // Nested path that may not exist
-            privacyLevel: response.user.settings.privacy.level // Backend structure inconsistency
-          }
-        };
+      // Construct user profile with assumptions about data structure
+      const userProfile = {
+        ...response.user,
+        theme: userTheme || 'light',
+        notifications: emailNotifications,
+        lastLoginDate: lastLoginDate,
+        socialAvatars: socialAvatars,
+        // BUG: Add derived properties that assume nested structures exist
+        displaySettings: {
+          showNotifications: response.user.settings.privacy.notifications, // Nested path that may not exist
+          privacyLevel: response.user.settings.privacy.level // Backend structure inconsistency
+        }
+      };
 
-        setUser(userProfile);
-        setIsAuthenticated(true);
-        localStorage.setItem('user', JSON.stringify(userProfile));
-        localStorage.setItem('authToken', response.token);
-        
-        console.log('Login successful');
-
-      } catch (dataProcessingError) {
-        // BUG: Frontend data processing failed due to backend missing properties
-        // This creates a realistic scenario where backend issues cause frontend errors
-        console.error('Failed to process user profile data:', dataProcessingError);
-        
-        // Capture the data processing error in Sentry
-        Sentry.captureException(dataProcessingError, {
-          tags: { 
-            section: 'frontend-data-processing',
-            authMethod: 'email-password'
-          },
-          extra: {
-            backendResponse: response,
-            email: email,
-            missingProperties: ['preferences.theme', 'settings.email', 'metadata.lastLogin']
-          }
-        });
-        
-        // Create a minimal user profile with safe defaults, but still try to access some missing properties
-        const fallbackProfile = {
-          ...response.user,
-          theme: 'light',
-          notifications: true,
-          lastLoginDate: new Date().toISOString(),
-          // BUG: Still try to access properties that might not exist
-          socialAvatars: [],
-          displaySettings: {
-            showNotifications: response.user.notificationSettings || false, // Backend sends this with wrong name
-            privacyLevel: 'standard'
-          },
-          // BUG: Add warning info that frontend might not handle properly
-          profileIncomplete: true,
-          missingData: response.warnings || ['Some profile data unavailable']
-        };
-
-        setUser(fallbackProfile);
-        setIsAuthenticated(true);
-        localStorage.setItem('user', JSON.stringify(fallbackProfile));
-        localStorage.setItem('authToken', response.token);
-        
-        // Show a user-visible error about incomplete profile
-        throw new Error('Login successful but some profile data could not be loaded. Please check your account settings.');
-      }
+      setUser(userProfile);
+      setIsAuthenticated(true);
+      localStorage.setItem('user', JSON.stringify(userProfile));
+      localStorage.setItem('authToken', response.token);
+      
+      console.log('Login successful');
 
     } catch (error: any) {
       console.error('Login failed:', error);
-      
-      // Capture login failure in Sentry
-      Sentry.captureException(error, {
-        tags: { 
-          section: 'authentication',
-          authMethod: 'email-password',
-          failed: true
-        },
-        extra: {
-          email: email,
-          errorMessage: error.message,
-          timestamp: new Date().toISOString()
-        }
-      });
       
       // Clear any partial state
       setUser(null);
@@ -161,6 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('user');
       localStorage.removeItem('authToken');
       
+      // Re-throw the error so Sentry can catch it automatically
       throw error;
     } finally {
       setIsLoading(false);
@@ -181,20 +118,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       console.log('Initiating SSO login with:', mockUserData);
-      console.log('JWT token was generated but not sent to backend');
+      console.log('JWT token provided:', !!jwtToken);
 
-      // Add breadcrumb for debugging
-      Sentry.addBreadcrumb({
-        message: `SSO login attempt with ${provider}`,
-        category: 'auth',
-        data: { 
-          provider: provider, 
-          hasJwtToken: !!jwtToken,
-          timestamp: new Date().toISOString()
-        }
-      });
-
-      // BUG: Call SSO endpoint without the JWT token that backend expects
+      // BUG: Call SSO endpoint - will fail if JWT token is missing
       // This simulates a miscommunication where frontend thinks they're sending auth
       // but backend expects a different format
       const response = await authService.ssoLogin(provider, {
@@ -204,21 +130,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         state: 'mock-state'
       });
 
-      // This should not be reached due to backend error
+      // This should not be reached if JWT token is missing
       console.log('SSO response received:', response);
 
       // BUG: If somehow we get here, try to process response that may be malformed
+      // These property accesses will throw errors that Sentry will catch
       const ssoUserProfile = {
         ...response.user,
         authProvider: provider,
-        // BUG: Backend error response might not have expected structure
         socialProfile: response.user.socialProfile || null,
         linkedAccounts: response.user.linkedAccounts || [],
         avatar: response.user.avatar || 'https://via.placeholder.com/150',
         isVerified: response.user.verified || false,
         // BUG: Try to access JWT data that won't exist due to backend error
-        jwtClaims: response.user.jwtClaims?.sub || 'unknown',
-        tokenExpiry: response.user.jwtClaims?.exp || null
+        jwtClaims: response.user.jwtClaims.sub, // Will throw error - Sentry will catch this
+        tokenExpiry: response.user.jwtClaims.exp // Will throw error - Sentry will catch this
       };
 
       setUser(ssoUserProfile);
@@ -231,30 +157,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error(`SSO login failed for ${provider}:`, error);
       
-      // Capture SSO authentication failures with context
-      Sentry.captureException(error, {
-        tags: { 
-          section: 'sso-authentication',
-          provider: provider,
-          hasJwtToken: !!jwtToken,
-          failed: true
-        },
-        extra: {
-          errorMessage: error.message,
-          provider: provider,
-          jwtTokenProvided: !!jwtToken,
-          timestamp: new Date().toISOString()
-        }
-      });
+      // Clear any partial state
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
       
-      // BUG: Frontend doesn't handle specific JWT validation errors properly
-      if (error.message.includes('JWT') || error.message.includes('token')) {
-        // This should help with debugging but might confuse users
-        throw new Error(`Authentication failed: JWT token validation error. Please contact support if this issue persists. (Error: ${error.message})`);
-      }
-      
-      // BUG: Generic error handling that doesn't give useful information
-      throw new Error(`Unable to authenticate with ${provider}. The authentication service may be temporarily unavailable.`);
+      // Re-throw the error so Sentry can catch it automatically
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -267,12 +177,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await authService.logout(token);
       }
     } catch (error) {
-      // Don't block logout on API error
+      // Don't block logout on API error, but let error bubble up for Sentry
       console.warn('Logout API call failed:', error);
-      Sentry.captureException(error, {
-        tags: { section: 'logout' },
-        extra: { timestamp: new Date().toISOString() }
-      });
+      // Don't re-throw here since logout should always succeed for UX
     } finally {
       setUser(null);
       setIsAuthenticated(false);
