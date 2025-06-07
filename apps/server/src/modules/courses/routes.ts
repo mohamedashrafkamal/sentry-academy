@@ -3,9 +3,6 @@ import { db } from '../../../db';
 import { courses, lessons, users, categories } from '../../../db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
-import * as Sentry from '@sentry/node';
-
-const { logger } = Sentry;
 
 export const courseRoutes = express.Router();
 
@@ -55,9 +52,6 @@ courseRoutes.get('/courses', async (req, res) => {
       .orderBy(desc(courses.createdAt));
 
     console.log('Query completed, returning', courseList.length, 'courses');
-    logger.info(
-      logger.fmt`Query completed, returning ${courseList.length} courses`
-    );
     res.json(courseList);
   } catch (error) {
     console.error('Database error in courses route:', error);
