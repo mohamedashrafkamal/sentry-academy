@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { authService } from '../services/authService';
+import * as Sentry from '@sentry/react';
 
 interface AuthContextType {
   user: User | null;
@@ -8,7 +9,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  ssoLogin: (provider: string) => Promise<void>;
+  ssoLogin: (provider: string, jwtToken?: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,6 +31,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAuthenticated(true);
       } catch (error) {
         console.error('Failed to parse stored user', error);
+        Sentry.captureException(error, {
+          tags: { section: 'auth-initialization' },
+          extra: { storedUser: storedUser?.substring(0, 100) }
+        });
         localStorage.removeItem('user');
         localStorage.removeItem('authToken');
       }
@@ -94,6 +99,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // This creates a realistic scenario where backend issues cause frontend errors
         console.error('Failed to process user profile data:', dataProcessingError);
         
+        // Capture the data processing error in Sentry
+        Sentry.captureException(dataProcessingError, {
+          tags: { 
+            section: 'frontend-data-processing',
+            authMethod: 'email-password'
+          },
+          extra: {
+            backendResponse: response,
+            email: email,
+            missingProperties: ['preferences.theme', 'settings.email', 'metadata.lastLogin']
+          }
+        });
+        
         // Create a minimal user profile with safe defaults, but still try to access some missing properties
         const fallbackProfile = {
           ...response.user,
@@ -123,6 +141,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error('Login failed:', error);
       
+      // Capture login failure in Sentry
+      Sentry.captureException(error, {
+        tags: { 
+          section: 'authentication',
+          authMethod: 'email-password',
+          failed: true
+        },
+        extra: {
+          email: email,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString()
+        }
+      });
+      
       // Clear any partial state
       setUser(null);
       setIsAuthenticated(false);
@@ -135,8 +167,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const ssoLogin = async (provider: string): Promise<void> => {
+  const ssoLogin = async (provider: string, jwtToken?: string): Promise<void> => {
     setIsLoading(true);
+    
     try {
       // BUG: Frontend team assumes they need to send a JWT token
       // But they generate it incorrectly and don't actually send it
@@ -150,13 +183,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Initiating SSO login with:', mockUserData);
       console.log('JWT token was generated but not sent to backend');
 
+      // Add breadcrumb for debugging
+      Sentry.addBreadcrumb({
+        message: `SSO login attempt with ${provider}`,
+        category: 'auth',
+        data: { 
+          provider: provider, 
+          hasJwtToken: !!jwtToken,
+          timestamp: new Date().toISOString()
+        }
+      });
+
       // BUG: Call SSO endpoint without the JWT token that backend expects
       // This simulates a miscommunication where frontend thinks they're sending auth
       // but backend expects a different format
       const response = await authService.ssoLogin(provider, {
         userData: mockUserData,
-        // BUG: Missing 'jwtToken' field that backend expects
-        // jwtToken: generatedJWT, // <-- This is what backend expects but frontend doesn't send
+        jwtToken: jwtToken, // Include the JWT token if provided
         code: 'mock-oauth-code',
         state: 'mock-state'
       });
@@ -174,8 +217,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         avatar: response.user.avatar || 'https://via.placeholder.com/150',
         isVerified: response.user.verified || false,
         // BUG: Try to access JWT data that won't exist due to backend error
-        jwtClaims: response.user.jwtClaims.sub, // Will throw error
-        tokenExpiry: response.user.jwtClaims.exp // Will throw error
+        jwtClaims: response.user.jwtClaims?.sub || 'unknown',
+        tokenExpiry: response.user.jwtClaims?.exp || null
       };
 
       setUser(ssoUserProfile);
@@ -187,6 +230,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     } catch (error: any) {
       console.error(`SSO login failed for ${provider}:`, error);
+      
+      // Capture SSO authentication failures with context
+      Sentry.captureException(error, {
+        tags: { 
+          section: 'sso-authentication',
+          provider: provider,
+          hasJwtToken: !!jwtToken,
+          failed: true
+        },
+        extra: {
+          errorMessage: error.message,
+          provider: provider,
+          jwtTokenProvided: !!jwtToken,
+          timestamp: new Date().toISOString()
+        }
+      });
       
       // BUG: Frontend doesn't handle specific JWT validation errors properly
       if (error.message.includes('JWT') || error.message.includes('token')) {
@@ -210,6 +269,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       // Don't block logout on API error
       console.warn('Logout API call failed:', error);
+      Sentry.captureException(error, {
+        tags: { section: 'logout' },
+        extra: { timestamp: new Date().toISOString() }
+      });
     } finally {
       setUser(null);
       setIsAuthenticated(false);
