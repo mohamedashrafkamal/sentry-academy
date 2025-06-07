@@ -12,6 +12,10 @@ import MyCoursesPage from './pages/MyCoursesPage';
 import FavoritesPage from './pages/FavoritesPage';
 import LessonPlansPage from './pages/LessonPlansPage';
 import ProfilePage from './pages/ProfilePage';
+import * as Sentry from '@sentry/react';
+import ErrorBoundary from './components/ErrorBoundary';
+
+const SentryRoutes = Sentry.withSentryReactRouterV7Routing(Routes);
 
 // Protected route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -33,55 +37,55 @@ function App() {
     <AuthProvider>
       <UserStateProvider>
         <Router>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
+          <SentryRoutes>
+            <Route path="/login" element={<LoginPage />} errorElement={<ErrorBoundary />} />
 
             <Route path="/" element={<MainLayout />}>
               <Route index element={
                 <ProtectedRoute>
                   <HomePage />
                 </ProtectedRoute>
-              } />
+              } errorElement={<ErrorBoundary />} />
 
               <Route path="courses" element={
                 <ProtectedRoute>
                   <CoursesPage />
                 </ProtectedRoute>
-              } />
+              } errorElement={<ErrorBoundary />} />
 
               <Route path="courses/:courseId" element={
                 <ProtectedRoute>
                   <CourseDetailPage />
                 </ProtectedRoute>
-              } />
+              } errorElement={<ErrorBoundary />} />
 
               <Route path="my-courses" element={
                 <ProtectedRoute>
                   <MyCoursesPage />
                 </ProtectedRoute>
-              } />
+              } errorElement={<ErrorBoundary />} />
 
               <Route path="favorites" element={
                 <ProtectedRoute>
                   <FavoritesPage />
                 </ProtectedRoute>
-              } />
+              } errorElement={<ErrorBoundary />} />
 
               <Route path="lesson-plans" element={
                 <ProtectedRoute>
                   <LessonPlansPage />
                 </ProtectedRoute>
-              } />
+              } errorElement={<ErrorBoundary />} />
 
               <Route path="profile" element={
                 <ProtectedRoute>
                   <ProfilePage />
                 </ProtectedRoute>
-              } />
+              } errorElement={<ErrorBoundary />} />
             </Route>
 
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+            <Route path="*" element={<Navigate to="/" replace />} errorElement={<ErrorBoundary />} />
+          </SentryRoutes>
         </Router>
       </UserStateProvider>
     </AuthProvider>

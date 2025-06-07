@@ -1,3 +1,4 @@
+import './instrument';
 import express from 'express';
 import cors from 'cors';
 import { courseRoutes } from './src/modules/courses/routes';
@@ -6,6 +7,7 @@ import { userRoutes } from './src/modules/users/routes';
 import { enrollmentRoutes } from './src/modules/enrollments/routes';
 import { searchRoutes } from './src/modules/search/routes';
 import { authRoutes } from './src/modules/auth/routes';
+import * as Sentry from '@sentry/node';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -53,6 +55,8 @@ app.use('/api', userRoutes);
 app.use('/api', enrollmentRoutes);
 app.use('/api', searchRoutes);
 app.use('/api/auth', authRoutes);
+
+Sentry.setupExpressErrorHandler(app);
 
 // Error handling middleware
 // @ts-expect-error - implicit any
