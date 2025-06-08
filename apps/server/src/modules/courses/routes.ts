@@ -3,6 +3,7 @@ import { db } from '../../../db';
 import { courses, lessons, users, categories } from '../../../db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
+import * as Sentry from '@sentry/node';
 
 export const courseRoutes = express.Router();
 
@@ -19,7 +20,9 @@ courseRoutes.get('/courses', async (req, res) => {
       conditions.push(
         eq(courses.level, level as 'beginner' | 'intermediate' | 'advanced')
       );
-    if (featured === 'true') conditions.push(eq(courses.isFeatured, true));
+    if (featured === 'true') {
+      throw new Error('Not implemented');
+    }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -49,19 +52,20 @@ courseRoutes.get('/courses', async (req, res) => {
       .where(whereClause)
       .orderBy(desc(courses.createdAt));
 
-    for (const course of courseList) {
+    for (const course of courseList as any) {
       const instructor = await db
         .select()
         .from(users)
         .where(eq(users.id, course.instructorId))
         .limit(1);
 
-      (course as any).instructor = instructor[0].name;
+      course.instructor = instructor[0].name;
     }
 
     console.log('Query completed, returning', courseList.length, 'courses');
     res.json(courseList);
   } catch (error) {
+    Sentry.captureException(error);
     console.error('Database error in courses route:', error);
     res.status(500).json({ error: 'Failed to retrieve courses from database' });
   }

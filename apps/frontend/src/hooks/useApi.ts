@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import * as Sentry from '@sentry/react';
 
 interface UseApiState<T> {
   data: T | null;
@@ -22,15 +23,17 @@ export function useApi<T>(
   });
 
   const execute = useCallback(async () => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-    
+    setState((prev) => ({ ...prev, loading: true, error: null }));
+
     try {
       const data = await apiFunction();
       setState({ data, loading: false, error: null });
       return data;
     } catch (error) {
-      const err = error instanceof Error ? error : new Error('An error occurred');
-      setState(prev => ({ ...prev, loading: false, error: err }));
+      Sentry.captureException(error);
+      const err =
+        error instanceof Error ? error : new Error('An error occurred');
+      setState((prev) => ({ ...prev, loading: false, error: err }));
       throw err;
     }
   }, [apiFunction]);
@@ -41,7 +44,9 @@ export function useApi<T>(
         // Let API parameter errors bubble up to Sentry while still handling in state
         if (error.message?.includes('Missing required parameter')) {
           // Rethrow to let Sentry capture it
-          setTimeout(() => { throw error; }, 0);
+          setTimeout(() => {
+            throw error;
+          }, 0);
         }
       });
     }
@@ -62,19 +67,23 @@ export function useApiMutation<TData, TVariables = void>(
     error: null,
   });
 
-  const mutate = useCallback(async (variables: TVariables) => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-    
-    try {
-      const data = await apiFunction(variables);
-      setState({ data, loading: false, error: null });
-      return data;
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error('An error occurred');
-      setState(prev => ({ ...prev, loading: false, error: err }));
-      throw err;
-    }
-  }, [apiFunction]);
+  const mutate = useCallback(
+    async (variables: TVariables) => {
+      setState((prev) => ({ ...prev, loading: true, error: null }));
+
+      try {
+        const data = await apiFunction(variables);
+        setState({ data, loading: false, error: null });
+        return data;
+      } catch (error) {
+        const err =
+          error instanceof Error ? error : new Error('An error occurred');
+        setState((prev) => ({ ...prev, loading: false, error: err }));
+        throw err;
+      }
+    },
+    [apiFunction]
+  );
 
   return {
     ...state,
