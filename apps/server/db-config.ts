@@ -11,7 +11,7 @@ const pool = new Pool({
 export const db = drizzle(pool);
 
 // Event listeners for pool
-pool.on('error', (err) => {
+pool.on('error', (err: any) => {
   console.error('Unexpected error on idle client', err);
   process.exit(-1);
 });

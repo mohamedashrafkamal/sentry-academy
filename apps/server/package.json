@@ -17,6 +17,7 @@
     "@types/cors": "^2.8.18",
     "@types/express": "^5.0.2",
     "@types/node": "^20.0.0",
+    "@types/pg": "^8.15.4",
     "dotenv": "^16.5.0",
     "drizzle-kit": "^0.31.1",
     "esbuild": "^0.25.5",
