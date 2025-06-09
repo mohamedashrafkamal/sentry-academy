@@ -67,20 +67,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
-      // Basic mock data - real user data will come from the decoded loginSignature
-      const basicUserData = {
-        email: `demo.user.${provider}@example.com`,
-        name: `Demo ${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
-        provider: provider,
-        timestamp: new Date().toISOString()
-      };
-
       console.log('Initiating SSO login');
       console.log('Login signature provided:', !!loginSignature);
 
       // WORKSHOP SCENARIO: Call SSO endpoint - will fail if loginSignature is missing
       const response = await authService.ssoLogin(provider, {
-        userData: basicUserData, // Fallback data, real data comes from loginSignature
         loginSignature: loginSignature, // This is undefined when not provided by frontend
         code: 'mock-oauth-code',
         state: 'mock-state'
@@ -104,7 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('user');
       localStorage.removeItem('authToken');
       
-      // Re-throw to let the error bubble up for Sentry to catch
+      // Re-throw to let the error bubble up
       throw error;
     } finally {
       setIsLoading(false);

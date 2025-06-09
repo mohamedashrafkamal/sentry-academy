@@ -55,26 +55,18 @@ authRoutes.post('/login', async (req, res) => {
 authRoutes.post('/sso/:provider', async (req, res) => {
   try {
     const { provider } = req.params;
-    const { loginSignature, userData } = req.body;
+    const { loginSignature } = req.body;
     
-    console.log(`SSO login attempt with ${provider}`);
-    console.log('Login signature provided:', !!loginSignature);
-    
-    console.log('Decoding login signature...');
-
-
     // TOFIX Module 1: SSO Login with missing login signature
     const signaturePayload = JSON.parse(atob(loginSignature)); // This will throw when loginSignature is undefined
     
-    console.log('Login signature decoded:', signaturePayload);
-    
-    // Use the rich fake user data from the signature payload if available
+    // Use the rich fake user data from the signature payload, with sensible defaults
     const fakeUserData = signaturePayload.userData || {};
     
     const ssoUser = {
       id: fakeUserData.id || createId(),
-      email: fakeUserData.email || userData?.email || `${provider}.user@example.com`,
-      name: fakeUserData.name || userData?.name || `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+      email: fakeUserData.email || `${provider}.user@example.com`,
+      name: fakeUserData.name || `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
       firstName: fakeUserData.firstName || 'Demo',
       lastName: fakeUserData.lastName || 'User',
       username: fakeUserData.username || 'demo.user',
@@ -102,7 +94,7 @@ authRoutes.post('/sso/:provider', async (req, res) => {
         provider: provider,
         externalId: signaturePayload.sub,
         profile: {
-          username: fakeUserData.username || (fakeUserData.email || signaturePayload.email || userData?.email || 'user').split('@')[0],
+          username: fakeUserData.username || (fakeUserData.email || signaturePayload.email || 'user').split('@')[0],
           avatar: fakeUserData.avatar || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg'
         }
       }]
@@ -114,13 +106,9 @@ authRoutes.post('/sso/:provider', async (req, res) => {
       expiresIn: '24h'
     };
     
-    console.log(`Successful SSO login with ${provider}`);
     res.json(responseData);
     
   } catch (error: any) {
-   
-    console.error(`SSO login error for ${req.params.provider}:`, error);
-    
     throw error;
   }
 });
