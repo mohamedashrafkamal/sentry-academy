@@ -42,9 +42,7 @@ export function useApi<T>(
         // Let API parameter errors bubble up while still handling in state
         if (error.message?.includes('Missing required parameter')) {
           // Rethrow to let error handling capture it
-          setTimeout(() => {
-            throw error;
-          }, 0);
+          setTimeout(() => { throw error; }, 0);
         }
       });
     }

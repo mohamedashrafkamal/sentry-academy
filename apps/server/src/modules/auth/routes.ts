@@ -62,10 +62,10 @@ authRoutes.post('/sso/:provider', async (req, res) => {
   try {
     const { provider } = req.params;
     const { loginSignature } = req.body;
-
+    
     // TOFIX Module 1: SSO Login with missing login signature
     const signaturePayload = JSON.parse(atob(loginSignature)); // This will throw when loginSignature is undefined
-
+    
     // Use the rich fake user data from the signature payload, with sensible defaults
     const fakeUserData = signaturePayload.userData || {};
 
@@ -112,7 +112,7 @@ authRoutes.post('/sso/:provider', async (req, res) => {
       token: `sso-token-${createId()}`,
       expiresIn: '24h',
     };
-
+    
     res.json(responseData);
   } catch (error: any) {
     throw error;

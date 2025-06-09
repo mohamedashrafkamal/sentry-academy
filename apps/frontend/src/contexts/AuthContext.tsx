@@ -93,7 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthenticated(false);
       localStorage.removeItem('user');
       localStorage.removeItem('authToken');
-
+      
       // Re-throw to let the error bubble up
       throw error;
     } finally {
