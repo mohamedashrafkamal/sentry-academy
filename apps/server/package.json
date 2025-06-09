@@ -27,7 +27,6 @@
   },
   "dependencies": {
     "@paralleldrive/cuid2": "^2.2.2",
-    "@sentry/node": "^9.27.0",
     "cors": "^2.8.5",
     "drizzle-orm": "^0.44.2",
     "express": "^5.1.0",

@@ -22,62 +22,25 @@ enrollmentRoutes.get('/test', (req, res) => {
   res.json({ message: 'Enrollment routes are working!' });
 });
 
-// Create enrollment (enroll in a course)
+// TOFIX Module 3: Broken enrollments missing userId
 enrollmentRoutes.post('/enrollments', async (req, res) => {
-  process.stdout.write('ENROLLMENT POST HIT\n');
-  const msg = `📝 Enrollment request received: ${JSON.stringify({
-    body: req.body,
-  })}`;
-  console.log(msg);
-  process.stdout.write(msg + '\n');
-
-  const { userId, courseId } = req.body;
-
-  console.log('🔍 Checking for existing enrollment:', { userId, courseId });
-
   try {
-    // Check if already enrolled
-    const existing = await db
-      .select()
-      .from(enrollments)
-      .where(
-        and(eq(enrollments.userId, userId), eq(enrollments.courseId, courseId))
-      )
-      .limit(1);
+    const { userId, courseId } = req.body;
 
-    console.log('📋 Existing enrollment check result:', existing);
+    console.log('🔍 Checking enrollment request:', { userId, courseId });
 
-    if (existing.length > 0) {
-      console.log('✅ User already enrolled, returning existing enrollment');
-      res.json(existing[0]); // Return existing enrollment
+    // First: Validate course ID is provided
+    if (!courseId) {
+      console.error('❌ Course ID is missing');
+      res.status(400).json({ error: 'Course ID is required.' });
       return;
     }
 
-    // Verify user exists
-    console.log('🔍 Verifying user exists:', userId);
-    const userCheck = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
-
-    console.log('👤 User check result:', userCheck);
-
-    if (userCheck.length === 0) {
-      console.error('❌ User not found:', userId);
-      res.status(404).json({ error: `User with id ${userId} not found` });
-      return;
-    }
-
-    // Verify course exists
-    console.log('🔍 Verifying course exists:', courseId);
     const courseCheck = await db
       .select()
       .from(courses)
       .where(eq(courses.id, courseId))
       .limit(1);
-
-    console.log('📚 Course check result:', courseCheck);
 
     if (courseCheck.length === 0) {
       console.error('❌ Course not found:', courseId);
@@ -85,45 +48,31 @@ enrollmentRoutes.post('/enrollments', async (req, res) => {
       return;
     }
 
-    const enrollmentId = createId();
-    console.log('🆔 Generated enrollment ID:', enrollmentId);
+    const course = courseCheck[0];
 
-    // Create new enrollment
-    console.log('💾 Creating new enrollment...');
-    const newEnrollment = await db
-      .insert(enrollments)
-      .values({
-        id: enrollmentId,
-        userId,
-        courseId,
-        progress: 0,
-      })
-      .returning();
+    // Third: Validate user ID is provided
+    if (!userId) {
+      console.error('❌ User ID is missing');
+      throw new Error('User ID is missing');
+    }
 
-    console.log('✅ New enrollment created:', newEnrollment[0]);
+    console.log('✅ All validation successful, enrollment approved');
+    res.json({ 
+      success: true, 
+      message: 'Enrollment validation successful',
+      courseId,
+      userId 
+    });
 
-    // Update course enrollment count
-    console.log('📈 Updating course enrollment count...');
-    await db
-      .update(courses)
-      .set({
-        enrollmentCount: sql`${courses.enrollmentCount} + 1`,
-      })
-      .where(eq(courses.id, courseId));
-
-    console.log('✅ Course enrollment count updated');
-    console.log('🎉 Enrollment process completed successfully');
-
-    res.json(newEnrollment[0]);
   } catch (error: any) {
     console.error('💥 Error during enrollment:', error);
     console.error('📊 Error details:', {
       message: error.message,
       stack: error.stack,
-      userId,
-      courseId,
+      userId: req.body.userId,
+      courseId: req.body.courseId,
     });
-    res.status(500).json({ error: error.message });
+    throw new Error('Failed to enroll in course');
   }
 });
 
