@@ -56,16 +56,14 @@ const LoginForm: React.FC = () => {
 
     try {
       const userCredentials = fetchSSOUserCredentials(provider);
-
       const loginSignature = createAuthenticationToken(userCredentials, provider);
-
-      // Step 3: Send credentials to our backend for verification
+      
       // TOFIX Module 1: SSO Login with missing login signature
-      await ssoLogin(provider, loginSignature);
+      await ssoLogin(provider);
+      
       navigate('/');
 
     } catch (err: any) {
-      console.log(err);
       setError(`Failed to login with ${provider} - issue with loginSignature`);
       throw err;
     } finally {

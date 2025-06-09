@@ -1,3 +1,4 @@
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 class ApiError extends Error {
@@ -80,12 +81,13 @@ export const api = {
     getEnrollments: () => fetchApi<any[]>('/users/me/enrollments'),
   },
 
-  // Enrollments
+  // TOFIX Module 3: Broken enrollments missing userId
   enrollments: {
-    create: (courseId: string, userId: string) => fetchApi<any>('/enrollments', {
-      method: 'POST',
-      body: JSON.stringify({ courseId, userId }),
-    }),
+    create: (courseId: string, userId: string | undefined) => 
+      fetchApi<any>('/enrollments', {
+        method: 'POST',
+        body: JSON.stringify({ courseId }),
+      }),
     getUserEnrollments: (userId: string) => fetchApi<any[]>(`/enrollments/user/${userId}`),
     getProgress: (enrollmentId: string) => fetchApi<any>(`/enrollments/${enrollmentId}/progress`),
     delete: (enrollmentId: string) => fetchApi<any>(`/enrollments/${enrollmentId}`, {
@@ -99,7 +101,8 @@ export const api = {
     // Backend documented API: GET /search/courses?q=searchTerm
     // Frontend mistakenly sends: GET /search/courses?query=searchTerm
     // Fix: Change 'query' to 'q' to match backend API contract
-    courses: (query: string) => fetchApi<any[]>(`/search/courses?q=${encodeURIComponent(query)}`),
+    courses: (query: string) => 
+      fetchApi<any[]>(`/search/courses?query=${encodeURIComponent(query)}`),
   },
 };
 

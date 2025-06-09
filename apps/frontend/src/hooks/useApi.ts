@@ -41,9 +41,9 @@ export function useApi<T>(
   useEffect(() => {
     if (immediate) {
       execute().catch((error) => {
-        // Let API parameter errors bubble up to Sentry while still handling in state
+        // Let API parameter errors bubble up while still handling in state
         if (error.message?.includes('Missing required parameter')) {
-          // Rethrow to let Sentry capture it
+          // Rethrow to let error handling capture it
           setTimeout(() => {
             throw error;
           }, 0);

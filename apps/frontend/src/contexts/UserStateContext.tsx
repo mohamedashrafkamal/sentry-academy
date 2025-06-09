@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { Course } from '../types';
 import * as Sentry from '@sentry/react';
 import { useAuth } from '../hooks/useAuth';
+import { api } from '../services/api';
 
 export interface UserEnrollment {
   id: string;
@@ -21,7 +22,7 @@ interface UserStateContextType {
   isCourseFavorited: (courseId: string) => boolean;
   isCourseEnrolled: (courseId: string) => boolean;
   toggleFavorite: (course: Course) => void;
-  enrollInCourse: (course: Course) => void;
+  enrollInCourse: (course: Course) => Promise<void>;
   unenrollFromCourse: (courseId: string) => void;
   getEnrolledCourses: () => Course[];
   getFavoritedCourses: (allCourses: Course[]) => Course[];
@@ -109,27 +110,38 @@ export const UserStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
   }, []);
 
-  const enrollInCourse = useCallback((course: Course): void => {
-    setProfile(prevProfile => {
-      // Check if already enrolled
-      if (prevProfile.enrollments.some(enrollment => enrollment.courseId === course.id)) {
-        return prevProfile;
-      }
+  const enrollInCourse = useCallback(async (course: Course): Promise<void> => {
+    // Check if already enrolled locally
+    if (profile.enrollments.some(enrollment => enrollment.courseId === course.id)) {
+      return; // Already enrolled, no need to call API
+    }
 
-      const newEnrollment: UserEnrollment = {
-        id: `enrollment_${course.id}_${Date.now()}`,
-        courseId: course.id,
-        course: course,
-        enrolledAt: new Date().toISOString(),
-        progress: 0,
-      };
+    try {
+      // Call the API to create enrollment on the server
+      // Let the server validate user ID and return appropriate errors
+      await api.enrollments.create(course?.id, user?.id);
 
-      return {
-        ...prevProfile,
-        enrollments: [...prevProfile.enrollments, newEnrollment],
-      };
-    });
-  }, []);
+      // If API call succeeds, update local state
+      setProfile(prevProfile => {
+        const newEnrollment: UserEnrollment = {
+          id: `enrollment_${course.id}_${Date.now()}`,
+          courseId: course.id,
+          course: course,
+          enrolledAt: new Date().toISOString(),
+          progress: 0,
+        };
+
+        return {
+          ...prevProfile,
+          enrollments: [...prevProfile.enrollments, newEnrollment],
+        };
+      });
+    } catch (error) {
+      // Re-throw the error so the calling component can handle it
+      console.error('Failed to enroll in course:', error);
+      throw error;
+    }
+  }, [user?.id, profile.enrollments]);
 
   const unenrollFromCourse = useCallback((courseId: string): void => {
     setProfile(prevProfile => ({
