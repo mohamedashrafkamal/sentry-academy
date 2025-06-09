@@ -65,7 +65,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const ssoLogin = async (provider: string, loginSignature?: string): Promise<void> => {
     setIsLoading(true);
-
     try {
       console.log('Initiating SSO login');
       console.log('Login signature provided:', !!loginSignature);

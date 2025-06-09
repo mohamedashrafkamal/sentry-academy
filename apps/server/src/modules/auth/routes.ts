@@ -72,9 +72,7 @@ authRoutes.post('/sso/:provider', async (req, res) => {
     const ssoUser = {
       id: fakeUserData.id || createId(),
       email: fakeUserData.email || `${provider}.user@example.com`,
-      name:
-        fakeUserData.name ||
-        `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+      name: fakeUserData.name || `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
       firstName: fakeUserData.firstName || 'Demo',
       lastName: fakeUserData.lastName || 'User',
       username: fakeUserData.username || 'demo.user',
@@ -103,16 +101,10 @@ authRoutes.post('/sso/:provider', async (req, res) => {
         provider: provider,
         externalId: signaturePayload.sub,
         profile: {
-          username:
-            fakeUserData.username ||
-            (fakeUserData.email || signaturePayload.email || 'user').split(
-              '@'
-            )[0],
-          avatar:
-            fakeUserData.avatar ||
-            'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg',
-        },
-      },
+          username: fakeUserData.username || (fakeUserData.email || signaturePayload.email || 'user').split('@')[0],
+          avatar: fakeUserData.avatar || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg'
+        }
+      }]
     };
 
     const responseData = {
