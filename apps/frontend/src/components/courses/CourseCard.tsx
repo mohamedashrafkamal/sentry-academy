@@ -69,15 +69,13 @@ const CourseCard: React.FC<CourseCardProps> = ({
 
     setIsEnrolling(true);
     try {
-      // Simulate a brief delay for better UX
-      await new Promise(resolve => setTimeout(resolve, 500));
-      enrollInCourse(course);
+      await enrollInCourse(course);
     } catch (error) {
-      console.error('Failed to enroll:', error);
-      alert('Failed to enroll in the course. Please try again.');
-    } finally {
+      // Do cleanup but re-throw to keep error unhandled
       setIsEnrolling(false);
+      throw error; // This keeps it unhandled
     }
+    setIsEnrolling(false);
   };
 
   return (

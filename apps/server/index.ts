@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import './instrument';
 import express from 'express';
 import cors from 'cors';
 import { courseRoutes } from './src/modules/courses/routes';
