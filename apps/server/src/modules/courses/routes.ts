@@ -21,7 +21,8 @@ courseRoutes.get('/courses', async (req, res) => {
         eq(courses.level, level as 'beginner' | 'intermediate' | 'advanced')
       );
     if (featured === 'true') {
-      throw new Error('Not implemented');
+      conditions.push(eq(courses.isFeatured, true));
+      // throw new Error('Not implemented');
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;

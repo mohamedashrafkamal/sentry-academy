@@ -104,7 +104,8 @@ const CoursesPage: React.FC = () => {
         </div>
       )}
 
-      <CourseGrid courses={[...processedCourses, { title: 'Test Course', description: 'Test Description', category: 'Test Category', level: 'beginner', instructor: 'Test Instructor', thumbnail: 'https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg', price: 100, rating: 4.5, reviewCount: 10, enrollmentCount: 100, isFeatured: true, createdAt: new Date(), publishedAt: new Date() }]} />
+      <CourseGrid courses={processedCourses} />
+      {/* <CourseGrid courses={[...processedCourses, { title: 'Test Course', description: 'Test Description', category: 'Test Category', level: 'beginner', instructor: 'Test Instructor', thumbnail: 'https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg', price: 100, rating: 4.5, reviewCount: 10, enrollmentCount: 100, isFeatured: true, createdAt: new Date(), publishedAt: new Date() }]} /> */}
     </div>
   );
 };
