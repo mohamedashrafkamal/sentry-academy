@@ -22,7 +22,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check for stored authentication
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('authToken');
-    
+
     if (storedUser && storedToken) {
       try {
         const parsedUser = JSON.parse(storedUser);
@@ -41,22 +41,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const response = await authService.login({ email, password });
-      
+
       setUser(response.user);
       setIsAuthenticated(true);
       localStorage.setItem('user', JSON.stringify(response.user));
       localStorage.setItem('authToken', response.token);
-      
+
       console.log('Email/password login successful');
 
     } catch (error: any) {
       console.error('Login failed:', error);
-      
+
       setUser(null);
       setIsAuthenticated(false);
       localStorage.removeItem('user');
       localStorage.removeItem('authToken');
-      
+
       throw error;
     } finally {
       setIsLoading(false);
@@ -65,7 +65,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const ssoLogin = async (provider: string, loginSignature?: string): Promise<void> => {
     setIsLoading(true);
-    
     try {
       console.log('Initiating SSO login');
       console.log('Login signature provided:', !!loginSignature);
@@ -84,12 +83,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthenticated(true);
       localStorage.setItem('user', JSON.stringify(response.user));
       localStorage.setItem('authToken', response.token);
-      
+
       console.log(`SSO login successful with ${provider}`);
 
     } catch (error: any) {
       console.error(`SSO login failed for ${provider}:`, error);
-      
+
       setUser(null);
       setIsAuthenticated(false);
       localStorage.removeItem('user');

@@ -19,7 +19,10 @@ courseRoutes.get('/courses', async (req, res) => {
       conditions.push(
         eq(courses.level, level as 'beginner' | 'intermediate' | 'advanced')
       );
-    if (featured === 'true') conditions.push(eq(courses.isFeatured, true));
+    if (featured === 'true') {
+      conditions.push(eq(courses.isFeatured, true));
+      // throw new Error('Not implemented');
+    }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -49,14 +52,14 @@ courseRoutes.get('/courses', async (req, res) => {
       .where(whereClause)
       .orderBy(desc(courses.createdAt));
 
-    for (const course of courseList) {
+    for (const course of courseList as any) {
       const instructor = await db
         .select()
         .from(users)
         .where(eq(users.id, course.instructorId))
         .limit(1);
 
-      (course as any).instructor = instructor[0].name;
+      course.instructor = instructor[0].name;
     }
 
     console.log('Query completed, returning', courseList.length, 'courses');

@@ -22,15 +22,16 @@ export function useApi<T>(
   });
 
   const execute = useCallback(async () => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-    
+    setState((prev) => ({ ...prev, loading: true, error: null }));
+
     try {
       const data = await apiFunction();
       setState({ data, loading: false, error: null });
       return data;
     } catch (error) {
-      const err = error instanceof Error ? error : new Error('An error occurred');
-      setState(prev => ({ ...prev, loading: false, error: err }));
+      const err =
+        error instanceof Error ? error : new Error('An error occurred');
+      setState((prev) => ({ ...prev, loading: false, error: err }));
       throw err;
     }
   }, [apiFunction]);
@@ -62,19 +63,23 @@ export function useApiMutation<TData, TVariables = void>(
     error: null,
   });
 
-  const mutate = useCallback(async (variables: TVariables) => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-    
-    try {
-      const data = await apiFunction(variables);
-      setState({ data, loading: false, error: null });
-      return data;
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error('An error occurred');
-      setState(prev => ({ ...prev, loading: false, error: err }));
-      throw err;
-    }
-  }, [apiFunction]);
+  const mutate = useCallback(
+    async (variables: TVariables) => {
+      setState((prev) => ({ ...prev, loading: true, error: null }));
+
+      try {
+        const data = await apiFunction(variables);
+        setState({ data, loading: false, error: null });
+        return data;
+      } catch (error) {
+        const err =
+          error instanceof Error ? error : new Error('An error occurred');
+        setState((prev) => ({ ...prev, loading: false, error: err }));
+        throw err;
+      }
+    },
+    [apiFunction]
+  );
 
   return {
     ...state,

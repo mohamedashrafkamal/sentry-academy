@@ -85,9 +85,12 @@ export const UserStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [profile.enrollments]);
 
   const toggleFavorite = useCallback((course: Course): void => {
+    if (!course.id) {
+      throw new Error('Course ID is required');
+    }
     setProfile(prevProfile => {
       const isFavorited = prevProfile.favoritesCourseIds.includes(course.id);
-      
+
       if (isFavorited) {
         // Remove from favorites
         return {
