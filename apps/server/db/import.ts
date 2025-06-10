@@ -3,6 +3,27 @@ import { db, users, courses, lessons, enrollments, lessonProgress, reviews, cate
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Function to convert timestamp strings back to Date objects
+function convertTimestamps(data: any[]): any[] {
+  return data.map(record => {
+    const converted = { ...record };
+    
+    // Convert all timestamp fields to Date objects
+    const timestampFields = [
+      'createdAt', 'updatedAt', 'publishedAt', 'enrolledAt', 'completedAt', 
+      'lastAccessedAt', 'issuedAt', 'expiresAt'
+    ];
+    
+    for (const field of timestampFields) {
+      if (converted[field] && typeof converted[field] === 'string') {
+        converted[field] = new Date(converted[field]);
+      }
+    }
+    
+    return converted;
+  });
+}
+
 async function importDatabase() {
   console.log('Starting database import...');
   
@@ -37,7 +58,8 @@ async function importDatabase() {
       console.log('Importing users...');
       const usersData = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
       if (usersData.length > 0) {
-        await db.insert(users).values(usersData).onConflictDoNothing();
+        const convertedUsers = convertTimestamps(usersData);
+        await db.insert(users).values(convertedUsers).onConflictDoNothing();
         console.log(`   ✅ Imported ${usersData.length} users`);
       }
     }
@@ -48,7 +70,8 @@ async function importDatabase() {
       console.log('Importing categories...');
       const categoriesData = JSON.parse(fs.readFileSync(categoriesPath, 'utf8'));
       if (categoriesData.length > 0) {
-        await db.insert(categories).values(categoriesData).onConflictDoNothing();
+        const convertedCategories = convertTimestamps(categoriesData);
+        await db.insert(categories).values(convertedCategories).onConflictDoNothing();
         console.log(`   ✅ Imported ${categoriesData.length} categories`);
       }
     }
@@ -59,7 +82,8 @@ async function importDatabase() {
       console.log('Importing courses...');
       const coursesData = JSON.parse(fs.readFileSync(coursesPath, 'utf8'));
       if (coursesData.length > 0) {
-        await db.insert(courses).values(coursesData).onConflictDoNothing();
+        const convertedCourses = convertTimestamps(coursesData);
+        await db.insert(courses).values(convertedCourses).onConflictDoNothing();
         console.log(`   ✅ Imported ${coursesData.length} courses`);
       }
     }
@@ -70,7 +94,8 @@ async function importDatabase() {
       console.log('Importing lessons...');
       const lessonsData = JSON.parse(fs.readFileSync(lessonsPath, 'utf8'));
       if (lessonsData.length > 0) {
-        await db.insert(lessons).values(lessonsData).onConflictDoNothing();
+        const convertedLessons = convertTimestamps(lessonsData);
+        await db.insert(lessons).values(convertedLessons).onConflictDoNothing();
         console.log(`   ✅ Imported ${lessonsData.length} lessons`);
       }
     }
@@ -81,7 +106,8 @@ async function importDatabase() {
       console.log('Importing enrollments...');
       const enrollmentsData = JSON.parse(fs.readFileSync(enrollmentsPath, 'utf8'));
       if (enrollmentsData.length > 0) {
-        await db.insert(enrollments).values(enrollmentsData).onConflictDoNothing();
+        const convertedEnrollments = convertTimestamps(enrollmentsData);
+        await db.insert(enrollments).values(convertedEnrollments).onConflictDoNothing();
         console.log(`   ✅ Imported ${enrollmentsData.length} enrollments`);
       }
     }
@@ -92,7 +118,8 @@ async function importDatabase() {
       console.log('Importing lesson progress...');
       const lessonProgressData = JSON.parse(fs.readFileSync(lessonProgressPath, 'utf8'));
       if (lessonProgressData.length > 0) {
-        await db.insert(lessonProgress).values(lessonProgressData).onConflictDoNothing();
+        const convertedLessonProgress = convertTimestamps(lessonProgressData);
+        await db.insert(lessonProgress).values(convertedLessonProgress).onConflictDoNothing();
         console.log(`   ✅ Imported ${lessonProgressData.length} lesson progress records`);
       }
     }
@@ -103,7 +130,8 @@ async function importDatabase() {
       console.log('Importing reviews...');
       const reviewsData = JSON.parse(fs.readFileSync(reviewsPath, 'utf8'));
       if (reviewsData.length > 0) {
-        await db.insert(reviews).values(reviewsData).onConflictDoNothing();
+        const convertedReviews = convertTimestamps(reviewsData);
+        await db.insert(reviews).values(convertedReviews).onConflictDoNothing();
         console.log(`   ✅ Imported ${reviewsData.length} reviews`);
       }
     }
@@ -114,7 +142,8 @@ async function importDatabase() {
       console.log('Importing certificates...');
       const certificatesData = JSON.parse(fs.readFileSync(certificatesPath, 'utf8'));
       if (certificatesData.length > 0) {
-        await db.insert(certificates).values(certificatesData).onConflictDoNothing();
+        const convertedCertificates = convertTimestamps(certificatesData);
+        await db.insert(certificates).values(convertedCertificates).onConflictDoNothing();
         console.log(`   ✅ Imported ${certificatesData.length} certificates`);
       }
     }

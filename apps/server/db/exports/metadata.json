@@ -1,0 +1,13 @@
+{
+  "exportDate": "2025-06-10T09:13:28.708Z",
+  "tables": {
+    "users": 9,
+    "categories": 5,
+    "courses": 11,
+    "lessons": 40,
+    "enrollments": 0,
+    "lessonProgress": 0,
+    "reviews": 0,
+    "certificates": 0
+  }
+}
