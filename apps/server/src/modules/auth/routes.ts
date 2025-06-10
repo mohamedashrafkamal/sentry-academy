@@ -104,7 +104,7 @@ authRoutes.post('/sso/:provider', async (req, res) => {
           username: fakeUserData.username || (fakeUserData.email || signaturePayload.email || 'user').split('@')[0],
           avatar: fakeUserData.avatar || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg'
         }
-      }]
+      }
     };
 
     const responseData = {
