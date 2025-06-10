@@ -4,7 +4,6 @@ import CourseGrid from '../components/courses/CourseGrid';
 import CategoryFilter from '../components/courses/CategoryFilter';
 import { api } from '../services/api';
 import { useApi } from '../hooks/useApi';
-import * as Sentry from '@sentry/react';
 
 const CoursesPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -24,7 +23,7 @@ const CoursesPage: React.FC = () => {
   }, [searchQuery]);
 
   const { data: coursesData, loading, error } = useApi(getCourses);
-  const getCategories = useCallback(() => Sentry.startSpan({ name: 'all-courses-content-load', op: 'cx' }, () => api.courses.getCategories()), []);
+  const getCategories = useCallback(() => api.courses.getCategories(), []);
   const { data: categoriesData } = useApi(getCategories);
 
   const categories = categoriesData?.map(cat => cat.name) || [];

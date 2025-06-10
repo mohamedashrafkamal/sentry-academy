@@ -16,13 +16,12 @@ import LessonList from '../components/lessons/LessonList';
 import LessonContent from '../components/lessons/LessonContent';
 import { api } from '../services/api';
 import { useApi } from '../hooks/useApi';
-import * as Sentry from '@sentry/react';
 
 const CourseDetailPage: React.FC = () => {
   const { courseId = '' } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
 
-  const getCourse = useCallback(() => Sentry.startSpan({ name: 'course-details-content-load', op: 'cx' }, () => api.courses.getById(courseId)), [courseId]);
+  const getCourse = useCallback(() => api.courses.getById(courseId), [courseId]);
   const { data: course, loading } = useApi(getCourse);
 
   // Fallback to static data if API fails or course not found
@@ -59,10 +58,8 @@ const CourseDetailPage: React.FC = () => {
   };
 
   const toggleBookmark = () => {
-    Sentry.startSpan({ name: 'bookmark', op: 'cx' }, () => {
-      setIsBookmarked(!isBookmarked);
-      // In a real app, this would update the user's favorites in the database
-    });
+    setIsBookmarked(!isBookmarked);
+    // In a real app, this would update the user's favorites in the database
   };
 
   if (loading) {

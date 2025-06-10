@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import * as Sentry from '@sentry/react';
 
 interface UseApiState<T> {
   data: T | null;
@@ -30,7 +29,6 @@ export function useApi<T>(
       setState({ data, loading: false, error: null });
       return data;
     } catch (error) {
-      Sentry.captureException(error);
       const err =
         error instanceof Error ? error : new Error('An error occurred');
       setState((prev) => ({ ...prev, loading: false, error: err }));

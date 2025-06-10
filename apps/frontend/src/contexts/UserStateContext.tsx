@@ -1,6 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { Course } from '../types';
-import * as Sentry from '@sentry/react';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../services/api';
 
@@ -89,24 +88,22 @@ export const UserStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (!course.id) {
       throw new Error('Course ID is required');
     }
-    Sentry.startSpan({ name: 'toggle-favorite', op: 'cx' }, () => {
-      setProfile(prevProfile => {
-        const isFavorited = prevProfile.favoritesCourseIds.includes(course.id);
+    setProfile(prevProfile => {
+      const isFavorited = prevProfile.favoritesCourseIds.includes(course.id);
 
-        if (isFavorited) {
-          // Remove from favorites
-          return {
-            ...prevProfile,
-            favoritesCourseIds: prevProfile.favoritesCourseIds.filter(id => id !== course.id),
-          };
-        } else {
-          // Add to favorites
-          return {
-            ...prevProfile,
-            favoritesCourseIds: [...prevProfile.favoritesCourseIds, course.id],
-          };
-        }
-      });
+      if (isFavorited) {
+        // Remove from favorites
+        return {
+          ...prevProfile,
+          favoritesCourseIds: prevProfile.favoritesCourseIds.filter(id => id !== course.id),
+        };
+      } else {
+        // Add to favorites
+        return {
+          ...prevProfile,
+          favoritesCourseIds: [...prevProfile.favoritesCourseIds, course.id],
+        };
+      }
     });
   }, []);
 

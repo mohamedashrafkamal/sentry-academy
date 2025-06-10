@@ -1,7 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { authService } from '../services/authService';
-import * as Sentry from '@sentry/react';
 
 interface AuthContextType {
   user: User | null;
@@ -51,7 +50,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Email/password login successful');
 
     } catch (error: any) {
-      Sentry.captureException(error);
       console.error('Login failed:', error);
 
       setUser(null);
