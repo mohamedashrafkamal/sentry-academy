@@ -16,7 +16,6 @@
     "db:import": "tsx db/import.ts"
   },
   "devDependencies": {
-    "@sentry/esbuild-plugin": "^3.5.0",
     "@types/cors": "^2.8.18",
     "@types/express": "^5.0.2",
     "@types/node": "^20.0.0",
