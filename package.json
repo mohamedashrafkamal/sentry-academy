@@ -12,7 +12,9 @@
     "build:frontend": "pnpm --filter @sentry-academy/frontend run build",
     "build:server": "pnpm --filter @sentry-academy/server run build",
     "lint": "pnpm --recursive run lint",
-    "start": "pnpm --parallel run start"
+    "start": "pnpm --parallel run start",
+    "db:export": "pnpm --filter @sentry-academy/server run db:export",
+    "db:import": "pnpm --filter @sentry-academy/server run db:import"
   },
   "devDependencies": {
     "pnpm": "^9.0.0"
