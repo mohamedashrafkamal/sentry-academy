@@ -11,7 +11,9 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx db/seed.ts",
-    "db:create-readonly-user": "tsx scripts/create-readonly-user.ts"
+    "db:create-readonly-user": "tsx scripts/create-readonly-user.ts",
+    "db:export": "tsx db/export.ts",
+    "db:import": "tsx db/import.ts"
   },
   "devDependencies": {
     "@sentry/esbuild-plugin": "^3.5.0",

@@ -1,0 +1,92 @@
+[
+  {
+    "id": "xt0yh53r82qyyp3ez9vep8jn",
+    "email": "alex.morgan@example.com",
+    "name": "Alex Morgan",
+    "role": "instructor",
+    "avatarUrl": null,
+    "bio": "Senior Developer Advocate specializing in observability and monitoring",
+    "createdAt": "2025-05-30T06:43:33.985Z",
+    "updatedAt": "2025-05-30T06:43:33.985Z"
+  },
+  {
+    "id": "lr604shzkd8c62ken59yx3lj",
+    "email": "sarah.chen@example.com",
+    "name": "Sarah Chen",
+    "role": "instructor",
+    "avatarUrl": null,
+    "bio": "Error tracking expert with 10+ years of experience",
+    "createdAt": "2025-05-30T06:43:34.064Z",
+    "updatedAt": "2025-05-30T06:43:34.064Z"
+  },
+  {
+    "id": "wjus3577r7zlo163lsdyw70c",
+    "email": "marcus.johnson@example.com",
+    "name": "Marcus Johnson",
+    "role": "instructor",
+    "avatarUrl": null,
+    "bio": "Performance optimization specialist",
+    "createdAt": "2025-05-30T06:43:34.138Z",
+    "updatedAt": "2025-05-30T06:43:34.138Z"
+  },
+  {
+    "id": "jk7pr44p3nofng3lywrb3s0s",
+    "email": "student@example.com",
+    "name": "Demo Student",
+    "role": "student",
+    "avatarUrl": null,
+    "bio": "Learning enthusiast",
+    "createdAt": "2025-05-30T06:43:35.428Z",
+    "updatedAt": "2025-05-30T06:43:35.428Z"
+  },
+  {
+    "id": "test-user-id",
+    "email": "test@example.com",
+    "name": "Test User",
+    "role": "student",
+    "avatarUrl": "https://ui-avatars.com/api/?name=TU&background=0ea5e9&color=fff&size=128",
+    "bio": null,
+    "createdAt": "2025-06-04T16:10:55.538Z",
+    "updatedAt": "2025-06-04T16:10:55.538Z"
+  },
+  {
+    "id": "erdi848dbzkt4d009tgg61ba",
+    "email": "cody.dearkland@sentryacademy.com",
+    "name": "Cody De Arkland",
+    "role": "instructor",
+    "avatarUrl": "https://ui-avatars.com/api/?name=CD&background=0ea5e9&color=fff&size=128",
+    "bio": "Senior Developer Advocate specializing in observability and monitoring",
+    "createdAt": "2025-06-02T06:32:23.809Z",
+    "updatedAt": "2025-06-04T16:42:01.068Z"
+  },
+  {
+    "id": "g9lqihw6xfg7vtfa4atlu321",
+    "email": "kyle.tryon@sentryacademy.com",
+    "name": "Kyle Tryon",
+    "role": "instructor",
+    "avatarUrl": "https://ui-avatars.com/api/?name=KT&background=22c55e&color=fff&size=128",
+    "bio": "Error tracking expert with 10+ years of experience",
+    "createdAt": "2025-06-02T06:32:23.887Z",
+    "updatedAt": "2025-06-04T16:42:01.146Z"
+  },
+  {
+    "id": "gemq5vprd3qnzk5llme00n5h",
+    "email": "lazar.nikolov@sentryacademy.com",
+    "name": "Lazar Nikolov",
+    "role": "instructor",
+    "avatarUrl": "https://ui-avatars.com/api/?name=LN&background=f59e0b&color=fff&size=128",
+    "bio": "Performance optimization specialist",
+    "createdAt": "2025-06-02T06:32:23.956Z",
+    "updatedAt": "2025-06-04T16:42:01.209Z"
+  },
+  {
+    "id": "sn4litkyc1a2v95ele9k1ni8",
+    "email": "paul.jaffre@sentryacademy.com",
+    "name": "Paul Jaffre",
+    "role": "instructor",
+    "avatarUrl": "https://ui-avatars.com/api/?name=PJ&background=8b5cf6&color=fff&size=128",
+    "bio": "Expert instructor at Sentry Academy",
+    "createdAt": "2025-06-02T06:32:24.022Z",
+    "updatedAt": "2025-06-04T16:42:01.270Z"
+  }
+]

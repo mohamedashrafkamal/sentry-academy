@@ -1,0 +1,47 @@
+[
+  {
+    "id": "xn32j2v9ejm8slecl9rvw1f1",
+    "name": "Observability",
+    "slug": "observability",
+    "description": "Learn about Observability best practices",
+    "icon": "🔍",
+    "order": 1,
+    "createdAt": "2025-05-30T06:43:33.683Z"
+  },
+  {
+    "id": "j1ssexnzd0jwyctav6iglpev",
+    "name": "Error Handling",
+    "slug": "error-handling",
+    "description": "Learn about Error Handling best practices",
+    "icon": "🐛",
+    "order": 2,
+    "createdAt": "2025-05-30T06:43:33.767Z"
+  },
+  {
+    "id": "jumczglzllcy47h6lcjp5ry0",
+    "name": "Performance",
+    "slug": "performance",
+    "description": "Learn about Performance best practices",
+    "icon": "⚡",
+    "order": 3,
+    "createdAt": "2025-05-30T06:43:33.840Z"
+  },
+  {
+    "id": "xl0j28ncsyout8mez26btny7",
+    "name": "Security",
+    "slug": "security",
+    "description": "Learn about Security best practices",
+    "icon": "🔒",
+    "order": 4,
+    "createdAt": "2025-05-30T06:43:33.909Z"
+  },
+  {
+    "id": "dqjvh36izixkt5oyyy1ewu82",
+    "name": "AI/ML",
+    "slug": "ai-ml",
+    "description": "Learn about AI/ML best practices",
+    "icon": "🤖",
+    "order": 5,
+    "createdAt": "2025-06-02T06:32:23.728Z"
+  }
+]
