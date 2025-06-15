@@ -14,7 +14,8 @@
     "db:seed": "tsx db/seed.ts",
     "db:create-readonly-user": "tsx scripts/create-readonly-user.ts",
     "db:export": "tsx db/export.ts",
-    "db:import": "tsx db/import.ts"
+    "db:import": "tsx db/import.ts",
+    "test": "vitest run --coverage"
   },
   "devDependencies": {
     "@types/cors": "^2.8.18",

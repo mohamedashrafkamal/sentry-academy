@@ -12,6 +12,7 @@
     "build:server": "pnpm --filter @sentry-academy/server run build",
     "lint": "pnpm --recursive run lint",
     "start": "pnpm --parallel run start",
+    "test": "pnpm -r --stream test",
     "db:export": "pnpm --filter @sentry-academy/server run db:export",
     "db:import": "pnpm --filter @sentry-academy/server run db:import"
   },

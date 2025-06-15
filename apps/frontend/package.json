@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "start": "vite preview"
+    "start": "vite preview",
+    "test": "vitest run --coverage --environment jsdom"
   },
   "dependencies": {
     "@faker-js/faker": "^9.8.0",
