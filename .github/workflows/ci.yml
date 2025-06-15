@@ -17,7 +17,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Install pnpm
         run: npm install -g pnpm
@@ -32,4 +32,4 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          slug: mohamedashrafkamal/sentry-academy 
+          slug: mohamedashrafkamal/sentry-academy
