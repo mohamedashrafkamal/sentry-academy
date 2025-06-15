@@ -2,7 +2,6 @@
   "name": "@sentry-academy/workspace",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
   "packageManager": "pnpm@9.0.0",
   "scripts": {
     "dev": "pnpm --parallel run dev",
@@ -17,6 +16,7 @@
     "db:import": "pnpm --filter @sentry-academy/server run db:import"
   },
   "devDependencies": {
-    "pnpm": "^9.0.0"
+    "pnpm": "^9.0.0",
+    "tailwindcss": "^3.4.17"
   }
 }
