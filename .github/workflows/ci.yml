@@ -12,22 +12,22 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Set up Node
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 6.32.9
+
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "14"
           cache: "pnpm"
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8
 
       - name: Install dependencies
         run: pnpm install
 
       - name: Run tests
-        run: pnpm exec vitest run --coverage --environment jsdom
+        run: pnpm test
 
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
