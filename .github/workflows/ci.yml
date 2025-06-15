@@ -1,17 +1,19 @@
-name: Run tests and upload coverage
+name: CodeCov Workflow
 
 on:
   push:
+    branches: [main, staging]
+  pull_request:
+    branches: [main, staging]
 
 jobs:
-  test:
-    name: Run tests and collect coverage
+  codecoverage:
+    name: Code Coverage
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -28,8 +30,7 @@ jobs:
       - name: Run tests
         run: pnpm exec vitest run --coverage
 
-      - name: Upload results to Codecov
+      - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          slug: mohamedashrafkamal/sentry-academy
