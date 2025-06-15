@@ -16,8 +16,14 @@
     "db:import": "pnpm --filter @sentry-academy/server run db:import"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@types/supertest": "^6.0.3",
+    "@types/testing-library__react": "^10.2.0",
     "@vitest/coverage-v8": "^3.2.3",
+    "jsdom": "^26.1.0",
     "pnpm": "^9.0.0",
+    "supertest": "^7.1.1",
     "tailwindcss": "^3.4.17",
     "vitest": "^3.2.3"
   }
