@@ -26,6 +26,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Clean old coverage files
+        run: |
+          rm -rf ./coverage
+          rm -rf apps/frontend/coverage
+          rm -rf apps/server/coverage
+
       - name: Run tests
         run: pnpm test
 
