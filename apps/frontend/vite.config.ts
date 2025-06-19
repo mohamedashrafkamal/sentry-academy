@@ -14,10 +14,6 @@ export default defineConfig({
       org: "workshop-academy",
       project: "academy-frontend",
     }),
-    sentryVitePlugin({
-      org: "workshop-academy",
-      project: "academy-frontend",
-    }),
   ],
 
   optimizeDeps: {

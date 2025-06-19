@@ -5,7 +5,7 @@ import { Badge } from "../Badge";
 describe("Badge", () => {
   it("renders with default props", () => {
     render(<Badge>Default</Badge>);
-    expect(screen.queryByText("Default")).to.not.be.null;
+    expect(screen.queryByText("Default")).not.toBeNull();
   });
 
   it("applies the correct variant and size classes", () => {

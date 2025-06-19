@@ -72,7 +72,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   ): Promise<void> => {
     setIsLoading(true);
     try {
-      throw new Error("test with show all data");
       console.log("Initiating SSO login");
       console.log("Login signature provided:", !!loginSignature);
 
